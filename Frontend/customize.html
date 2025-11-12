@@ -4,9 +4,516 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Cover Generator – Customize</title>
+
+  <!-- Shared styles for the site -->
   <link rel="stylesheet" href="/assets/styles.css"/>
+
+  <!-- Page-specific styles (your original CSS) -->
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+      background: #1a1d2e;
+      min-height: 100vh;
+      color: #e8e9ed;
+    }
+
+    /* Navigation Bar */
+    .navbar {
+      background: #22263a;
+      height: 70px;
+      display: flex;
+      align-items: center;
+      padding: 0 40px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .logo {
+      font-size: 1.3em;
+      font-weight: 500;
+      color: #e8e9ed;
+      letter-spacing: -0.3px;
+      text-decoration: none;
+    }
+
+    .nav-items {
+      display: flex;
+      gap: 8px;
+      margin-left: auto;
+    }
+
+    .nav-item {
+      padding: 10px 20px;
+      color: #8b92b0;
+      text-decoration: none;
+      border-radius: 8px;
+      transition: all 0.3s ease;
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .nav-item:hover {
+      background: rgba(255, 255, 255, 0.05);
+      color: #c9b8f0;
+    }
+
+    .nav-item.active {
+      background: #c9b8f0;
+      color: #1a1d2e;
+    }
+
+    /* Dashboard Layout */
+    .dashboard {
+      display: grid;
+      grid-template-columns: 300px 1fr 340px;
+      height: calc(100vh - 70px);
+      gap: 0;
+    }
+
+    /* Left Panel */
+    .left-panel {
+      background: #1f2235;
+      padding: 32px 28px;
+      border-right: 1px solid rgba(255, 255, 255, 0.08);
+      overflow-y: auto;
+    }
+
+    .panel-title {
+      font-size: 1.1em;
+      font-weight: 500;
+      color: #e8e9ed;
+      margin-bottom: 24px;
+      letter-spacing: -0.3px;
+    }
+
+    .control-group {
+      margin-bottom: 28px;
+    }
+
+    .control-label {
+      font-size: 13px;
+      font-weight: 500;
+      color: #8b92b0;
+      margin-bottom: 10px;
+      display: block;
+    }
+
+    .template-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+
+    .template-card {
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .template-card:hover {
+      transform: translateY(-2px);
+    }
+
+    .template-preview {
+      width: 100%;
+      aspect-ratio: 1;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .template-name {
+      text-align: center;
+      font-size: 12px;
+      color: #8b92b0;
+    }
+
+    .history-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .history-item {
+      padding: 10px;
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 8px;
+      font-size: 13px;
+      color: #8b92b0;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .history-item:hover {
+      background: rgba(255, 255, 255, 0.05);
+      color: #c9b8f0;
+    }
+
+    .change-playlist-btn {
+      width: 100%;
+      padding: 14px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      color: #e8e9ed;
+      font-weight: 500;
+      cursor: pointer;
+      margin-top: 20px;
+      transition: all 0.3s ease;
+      font-size: 14px;
+    }
+
+    .change-playlist-btn:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(201, 184, 240, 0.3);
+    }
+
+    /* Center Area */
+    .center-area {
+      padding: 40px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 32px;
+      background: #1a1d2e;
+    }
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .section-title {
+      font-size: 1.2em;
+      font-weight: 500;
+      color: #e8e9ed;
+      letter-spacing: -0.3px;
+    }
+
+    .canvas-container {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      flex: 1;
+    }
+
+    .canvas-toolbar {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+    }
+
+    .tool-btn {
+      padding: 8px 16px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      color: #e8e9ed;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .tool-btn:hover {
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .regenerate-btn {
+      padding: 10px 20px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      color: #e8e9ed;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-size: 14px;
+    }
+
+    .regenerate-btn:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(180, 200, 220, 0.3);
+    }
+
+    .canvas-area {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 16px;
+      padding: 40px;
+      min-height: 400px;
+    }
+
+    .cover-canvas {
+      width: 100%;
+      max-width: 500px;
+      aspect-ratio: 1;
+      background: linear-gradient(135deg, #a7c7e7 30%, #c9b8f0 70%);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .canvas-content {
+      padding: 40px;
+      text-align: center;
+    }
+
+    .action-bar {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      padding: 20px;
+      background: rgba(255, 255, 255, 0.02);
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .action-bar-btn {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .primary-action {
+      background: #c9b8f0;
+      color: #1a1d2e;
+    }
+
+    .primary-action:hover {
+      background: #d4c4f5;
+      transform: translateY(-2px);
+    }
+
+    .secondary-action {
+      background: rgba(255, 255, 255, 0.05);
+      color: #e8e9ed;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .secondary-action:hover {
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    /* Right Panel */
+    .right-panel {
+      background: #1f2235;
+      padding: 32px 28px;
+      border-left: 1px solid rgba(255, 255, 255, 0.08);
+      overflow-y: auto;
+    }
+
+    .text-input {
+      width: 100%;
+      padding: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      font-size: 14px;
+      font-family: inherit;
+      transition: all 0.3s ease;
+      background: rgba(255, 255, 255, 0.03);
+      color: #e8e9ed;
+    }
+
+    .text-input:focus {
+      outline: none;
+      border-color: #c9b8f0;
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .slider {
+      width: 100%;
+      height: 6px;
+      border-radius: 3px;
+      background: rgba(255, 255, 255, 0.1);
+      outline: none;
+      cursor: pointer;
+    }
+
+    .slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #c9b8f0;
+      cursor: pointer;
+    }
+
+    .slider::-moz-range-thumb {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #c9b8f0;
+      cursor: pointer;
+      border: none;
+    }
+
+    .button-group {
+      display: flex;
+      gap: 8px;
+    }
+
+    .group-btn {
+      flex: 1;
+      padding: 10px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      color: #8b92b0;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .group-btn:hover {
+      background: rgba(255, 255, 255, 0.05);
+      color: #c9b8f0;
+    }
+
+    .group-btn.active {
+      background: #c9b8f0;
+      color: #1a1d2e;
+      border-color: #c9b8f0;
+    }
+
+    .dropdown {
+      width: 100%;
+      padding: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      font-size: 14px;
+      font-family: inherit;
+      background: rgba(255, 255, 255, 0.03);
+      color: #e8e9ed;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .dropdown:focus {
+      outline: none;
+      border-color: #c9b8f0;
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .color-picker {
+      width: 50px;
+      height: 36px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: transparent;
+      cursor: pointer;
+    }
+
+    .checkbox-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #8b92b0;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    .checkbox-label input[type="checkbox"] {
+      cursor: pointer;
+    }
+
+    /* Flow Arrows */
+    .flow-indicator {
+      position: fixed;
+      color: rgba(201, 184, 240, 0.3);
+      font-size: 32px;
+      font-weight: 300;
+      pointer-events: none;
+    }
+
+    .arrow-left-center {
+      left: 280px;
+      top: 50%;
+    }
+
+    .arrow-center-right {
+      right: 320px;
+      top: 50%;
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(201, 184, 240, 0.3);
+    }
+
+    /* Responsive */
+    @media (max-width: 1200px) {
+      .dashboard {
+        grid-template-columns: 1fr;
+      }
+
+      .left-panel,
+      .right-panel {
+        border: none;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      }
+
+      .flow-indicator {
+        display: none;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .navbar {
+        padding: 0 20px;
+      }
+
+      .nav-items {
+        gap: 4px;
+      }
+
+      .nav-item {
+        padding: 8px 12px;
+        font-size: 12px;
+      }
+
+      .center-area {
+        padding: 20px;
+      }
+
+      .action-bar {
+        flex-wrap: wrap;
+      }
+    }
+  </style>
 </head>
 <body>
+  <!-- Navigation Bar -->
   <nav class="navbar">
     <a class="logo" href="/">Cover Generator</a>
     <div class="nav-items">
@@ -17,15 +524,187 @@
     </div>
   </nav>
 
-  <main class="container" style="padding:140px 40px;text-align:center;">
-    <h1 style="font-size:2.5em;margin-bottom:20px;">Customize</h1>
-    <p class="hero-subtitle">Coming soon: advanced text, layout, and overlay controls.</p>
-  </main>
+  <!-- Dashboard -->
+  <div class="dashboard">
+    <!-- Left Panel: Templates & History -->
+    <aside class="left-panel">
+      <h2 class="panel-title">Templates & Presets</h2>
+      
+      <div class="control-group">
+        <div class="control-label">Style Templates</div>
+        <div class="template-grid">
+          <div class="template-card" data-c1="#c9b8f0" data-c2="#d4c4f5">
+            <div class="template-preview" style="background: linear-gradient(135deg, #c9b8f0 0%, #d4c4f5 100%);"></div>
+            <div class="template-name">Modern</div>
+          </div>
+          <div class="template-card" data-c1="#a7c7e7" data-c2="#b4d4f0">
+            <div class="template-preview" style="background: linear-gradient(135deg, #a7c7e7 0%, #b4d4f0 100%);"></div>
+            <div class="template-name">Minimal</div>
+          </div>
+          <div class="template-card" data-c1="#e8b4c8" data-c2="#f0c8d0">
+            <div class="template-preview" style="background: linear-gradient(135deg, #e8b4c8 0%, #f0c8d0 100%);"></div>
+            <div class="template-name">Bold</div>
+          </div>
+          <div class="template-card" data-c1="#b8d8ba" data-c2="#c8e6d7">
+            <div class="template-preview" style="background: linear-gradient(135deg, #b8d8ba 0%, #c8e6d7 100%);"></div>
+            <div class="template-name">Vintage</div>
+          </div>
+        </div>
+      </div>
 
-  <footer class="footer">
-    <p>&copy; 2025 Cover Generator.</p>
-  </footer>
+      <div class="control-group">
+        <div class="control-label">Recent Edits</div>
+        <div class="history-list" id="custHistory">
+          <div class="history-item">Late Night Vibes v3</div>
+          <div class="history-item">Late Night Vibes v2</div>
+          <div class="history-item">Late Night Vibes v1</div>
+        </div>
+      </div>
 
+      <button class="change-playlist-btn">Load Preset</button>
+    </aside>
+
+    <!-- Center Area: Canvas -->
+    <main class="center-area">
+      <div class="section-header">
+        <h2 class="section-title">Cover Editor</h2>
+        <div style="display: flex; gap: 12px;">
+          <button class="regenerate-btn">Undo</button>
+          <button class="regenerate-btn">Redo</button>
+        </div>
+      </div>
+
+      <div class="canvas-container">
+        <div class="canvas-toolbar">
+          <button class="tool-btn">Zoom In</button>
+          <button class="tool-btn">Zoom Out</button>
+          <button class="tool-btn">Grid</button>
+        </div>
+        <div class="canvas-area">
+          <div id="customCanvas" class="cover-canvas">
+            <div id="canvasInner" class="canvas-content">
+              <h2 id="canvasTitle">Late Night Vibes</h2>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Bar -->
+      <div class="action-bar">
+        <button id="custReset" class="action-bar-btn secondary-action">Start Over</button>
+        <button id="custSave" class="action-bar-btn secondary-action">Save Draft</button>
+        <button id="custDownload" class="action-bar-btn primary-action">Download</button>
+        <button class="action-bar-btn primary-action">Share</button>
+      </div>
+    </main>
+
+    <!-- Right Panel: Advanced Tools -->
+    <aside class="right-panel">
+      <h2 class="panel-title">Advanced Tools</h2>
+
+      <!-- Text Controls -->
+      <div class="control-group">
+        <div class="control-label">Text Content</div>
+        <input id="custTitle" type="text" class="text-input" placeholder="Title" value="Late Night Vibes">
+        <input id="custSubtitle" type="text" class="text-input" placeholder="Subtitle" value="" style="margin-top: 8px;">
+      </div>
+
+      <div class="control-group">
+        <div class="control-label">Text Size</div>
+        <input id="custSize" type="range" class="slider" min="12" max="72" value="36">
+      </div>
+
+      <div class="control-group">
+        <div class="control-label">Text Position</div>
+        <div id="custPos" class="button-group">
+          <button class="group-btn" data-pos="top">Top</button>
+          <button class="group-btn active" data-pos="center">Center</button>
+          <button class="group-btn" data-pos="bottom">Bottom</button>
+        </div>
+      </div>
+
+      <!-- Typography -->
+      <div class="control-group">
+        <div class="control-label">Font Family</div>
+        <select id="custFont" class="dropdown">
+          <option>Modern Sans</option>
+          <option>Classic Serif</option>
+          <option>Bold Display</option>
+          <option>Elegant Script</option>
+          <option>Monospace</option>
+          <option>Handwritten</option>
+        </select>
+      </div>
+
+      <div class="control-group">
+        <div class="control-label">Font Weight</div>
+        <div id="custWeight" class="button-group">
+          <button class="group-btn" data-w="300">Light</button>
+          <button class="group-btn active" data-w="600">Regular</button>
+          <button class="group-btn" data-w="800">Bold</button>
+        </div>
+      </div>
+
+      <!-- Color Tools -->
+      <div class="control-group">
+        <div class="control-label">Text Color</div>
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <input id="textColor" type="color" class="color-picker" value="#ffffff">
+          <span id="textColorCode" style="font-size: 13px; color: #8b92b0;">#FFFFFF</span>
+        </div>
+      </div>
+
+      <div class="control-group">
+        <div class="control-label">Background Gradient</div>
+        <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 8px;">
+          <input id="bgStart" type="color" class="color-picker" value="#a7c7e7">
+          <span style="font-size: 13px; color: #8b92b0;">Start</span>
+        </div>
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <input id="bgEnd" type="color" class="color-picker" value="#c9b8f0">
+          <span style="font-size: 13px; color: #8b92b0;">End</span>
+        </div>
+      </div>
+
+      <div class="control-group">
+        <div class="control-label">Opacity</div>
+        <input id="bgOpacity" type="range" class="slider" min="0" max="100" value="100">
+      </div>
+
+      <!-- Effects -->
+      <div class="control-group">
+        <div class="control-label">Effects</div>
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <label class="checkbox-label">
+            <input id="fxShadow" type="checkbox"> Text Shadow
+          </label>
+          <label class="checkbox-label">
+            <input id="fxGlow" type="checkbox"> Glow Effect
+          </label>
+          <label class="checkbox-label">
+            <input id="fxBlur" type="checkbox"> Blur Background
+          </label>
+        </div>
+      </div>
+
+      <div class="control-group">
+        <div class="control-label">Filters</div>
+        <select class="dropdown">
+          <option>None</option>
+          <option>Vintage</option>
+          <option>High Contrast</option>
+          <option>Grayscale</option>
+          <option>Sepia</option>
+        </select>
+      </div>
+    </aside>
+  </div>
+
+  <!-- Flow Indicators -->
+  <div class="flow-indicator arrow-left-center">→</div>
+  <div class="flow-indicator arrow-center-right">→</div>
+
+  <!-- Shared app logic (nav highlight, customize wiring, download, etc.) -->
   <script src="/assets/app.js"></script>
 </body>
 </html>

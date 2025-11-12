@@ -19,20 +19,36 @@
 
   <div class="dashboard">
     <aside class="left-panel">
-      <h2 class="panel-title">Playlist Information</h2>
-      <div class="playlist-info">
+        <h2 class="panel-title">Playlist Information</h2>
+
+    <!-- Mock playlist picker -->
+    <div class="control-group" style="margin-top:10px">
+        <label class="control-label">Choose a Playlist (mock)</label>
+        <select id="playlistSelect" class="dropdown">
+        <option value="">— Select —</option>
+        <option value='{"title":"Late Night Vibes","meta":"24 songs • 1h 32m","subtitle":"lofi • chill • night"}'>
+            Late Night Vibes
+        </option>
+        <option value='{"title":"Gym Hype","meta":"31 songs • 1h 44m","subtitle":"edm • pop • pump"}'>
+            Gym Hype
+        </option>
+        <option value='{"title":"Study Flow","meta":"52 songs • 2h 58m","subtitle":"ambient • focus • soft"}'>
+            Study Flow
+        </option>
+        </select>
+    </div>
+
+    <!-- Summary (updated by JS) -->
+    <div class="playlist-info">
         <div class="playlist-title">Late Night Vibes</div>
         <div class="playlist-meta">24 songs • 1h 32m</div>
-      </div>
-      <div class="song-list">
-        <div class="song-item">Midnight City</div>
-        <div class="song-item">Electric Feel</div>
-        <div class="song-item">Resonance</div>
-        <div class="song-item">Sunset Lover</div>
-        <div class="song-item">Ribs</div>
-        <div class="song-item">Breathe</div>
-      </div>
-      <button class="change-playlist-btn">Change Playlist</button>
+    </div>
+
+    <!-- Clear label  -->
+    <div class="control-label" style="margin:14px 0 6px;">Songs in this playlist</div>
+    <div id="songList" class="song-list">
+        <!-- JS will render items here based on playlist selection -->
+    </div>
     </aside>
 
     <main class="center-area">
