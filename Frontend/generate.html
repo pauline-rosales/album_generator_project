@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Cover Generator – Generate</title>
+  <link rel="stylesheet" href="/assets/styles.css"/>
+</head>
+<body>
+  <nav class="navbar">
+    <a class="logo" href="/">Cover Generator</a>
+    <div class="nav-items">
+      <a class="nav-item" href="/">Home</a>
+      <a class="nav-item" href="/generate">Generate</a>
+      <a class="nav-item" href="/customize">Customize</a>
+      <a class="nav-item" href="/help">Help</a>
+    </div>
+  </nav>
+
+  <div class="dashboard">
+    <aside class="left-panel">
+      <h2 class="panel-title">Playlist Information</h2>
+      <div class="playlist-info">
+        <div class="playlist-title">Late Night Vibes</div>
+        <div class="playlist-meta">24 songs • 1h 32m</div>
+      </div>
+      <div class="song-list">
+        <div class="song-item">Midnight City</div>
+        <div class="song-item">Electric Feel</div>
+        <div class="song-item">Resonance</div>
+        <div class="song-item">Sunset Lover</div>
+        <div class="song-item">Ribs</div>
+        <div class="song-item">Breathe</div>
+      </div>
+      <button class="change-playlist-btn">Change Playlist</button>
+    </aside>
+
+    <main class="center-area">
+      <div class="section-header">
+        <h2 class="section-title">AI Cover Previews</h2>
+        <button class="regenerate-btn">Regenerate</button>
+      </div>
+
+      <div class="cover-grid">
+        <div class="cover-card selected">
+          <div class="cover-preview">Cover A</div>
+          <button class="select-btn">Select This</button>
+        </div>
+        <div class="cover-card">
+          <div class="cover-preview">Cover B</div>
+          <button class="select-btn">Select This</button>
+        </div>
+        <div class="cover-card">
+          <div class="cover-preview">Cover C</div>
+          <button class="select-btn">Select This</button>
+        </div>
+      </div>
+    </main>
+
+    <aside class="right-panel">
+      <h2 class="panel-title">Customization Tools</h2>
+
+      <div class="control-group">
+        <label class="control-label">Title Text</label>
+        <input type="text" class="text-input" placeholder="Enter playlist title" value="Late Night Vibes">
+      </div>
+
+      <div class="control-group">
+        <label class="control-label">Font Style</label>
+        <select class="dropdown">
+          <option>Modern Sans</option>
+          <option>Classic Serif</option>
+          <option>Bold Display</option>
+          <option>Elegant Script</option>
+        </select>
+      </div>
+
+      <div class="control-group">
+        <label class="control-label">Color Palette</label>
+        <div class="color-swatches">
+          <div class="color-swatch swatch-1 selected"></div>
+          <div class="color-swatch swatch-2"></div>
+          <div class="color-swatch swatch-3"></div>
+          <div class="color-swatch swatch-4"></div>
+          <div class="color-swatch swatch-5"></div>
+          <div class="color-swatch swatch-6"></div>
+          <div class="color-swatch swatch-7"></div>
+          <div class="color-swatch swatch-8"></div>
+        </div>
+      </div>
+
+      <div class="action-buttons">
+        <button class="primary-btn apply-btn">Apply Changes</button>
+        <button class="primary-btn download-btn">Download Cover</button>
+      </div>
+    </aside>
+  </div>
+
+  <div class="flow-indicator arrow-left-center">→</div>
+  <div class="flow-indicator arrow-center-right">→</div>
+
+  <script src="/assets/app.js"></script>
+</body>
+</html>
