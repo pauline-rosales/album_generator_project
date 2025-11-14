@@ -6,6 +6,7 @@
   <title>Cover Generator – Generate</title>
   <link rel="stylesheet" href="/assets/styles.css"/>
 </head>
+
 <body>
   <nav class="navbar">
     <a class="logo" href="/">Cover Generator</a>
@@ -18,43 +19,36 @@
   </nav>
 
   <div class="dashboard">
-    <aside class="left-panel">
-        <h2 class="panel-title">Playlist Information</h2>
 
-    <!-- Mock playlist picker -->
-    <div class="control-group" style="margin-top:10px">
+    <!-- LEFT PANEL -->
+    <aside class="left-panel">
+      <h2 class="panel-title">Playlist Information</h2>
+
+      <div class="control-group" style="margin-top:10px">
         <label class="control-label">Choose a Playlist (mock)</label>
         <select id="playlistSelect" class="dropdown">
-        <option value="">— Select —</option>
-        <option value='{"title":"Late Night Vibes","meta":"24 songs • 1h 32m","subtitle":"lofi • chill • night"}'>
-            Late Night Vibes
-        </option>
-        <option value='{"title":"Gym Hype","meta":"31 songs • 1h 44m","subtitle":"edm • pop • pump"}'>
-            Gym Hype
-        </option>
-        <option value='{"title":"Study Flow","meta":"52 songs • 2h 58m","subtitle":"ambient • focus • soft"}'>
-            Study Flow
-        </option>
+          <option value="">— Select —</option>
+          <option value='{"title":"Late Night Vibes","meta":"24 songs • 1h 32m","subtitle":"lofi • chill • night"}'>Late Night Vibes</option>
+          <option value='{"title":"Gym Hype","meta":"31 songs • 1h 44m","subtitle":"edm • pop • pump"}'>Gym Hype</option>
+          <option value='{"title":"Study Flow","meta":"52 songs • 2h 58m","subtitle":"ambient • focus • soft"}'>Study Flow</option>
         </select>
-    </div>
+      </div>
 
-    <!-- Summary (updated by JS) -->
-    <div class="playlist-info">
+      <div class="playlist-info">
         <div class="playlist-title">Late Night Vibes</div>
         <div class="playlist-meta">24 songs • 1h 32m</div>
-    </div>
+        <div id="playlistMood" style="margin-top:8px;font-size:13px;color:#c9b8f0;"></div>
+      </div>
 
-    <!-- Clear label  -->
-    <div class="control-label" style="margin:14px 0 6px;">Songs in this playlist</div>
-    <div id="songList" class="song-list">
-        <!-- JS will render items here based on playlist selection -->
-    </div>
+      <div class="control-label" style="margin:14px 0 6px;">Songs in this playlist</div>
+      <div id="songList" class="song-list"></div>
     </aside>
 
+    <!-- CENTER PANEL -->
     <main class="center-area">
       <div class="section-header">
         <h2 class="section-title">AI Cover Previews</h2>
-        <button class="regenerate-btn">Regenerate</button>
+        <button class="regenerate-btn">Generate</button>
       </div>
 
       <div class="cover-grid">
@@ -62,10 +56,12 @@
           <div class="cover-preview">Cover A</div>
           <button class="select-btn">Select This</button>
         </div>
+
         <div class="cover-card">
           <div class="cover-preview">Cover B</div>
           <button class="select-btn">Select This</button>
         </div>
+
         <div class="cover-card">
           <div class="cover-preview">Cover C</div>
           <button class="select-btn">Select This</button>
@@ -73,6 +69,7 @@
       </div>
     </main>
 
+    <!-- RIGHT PANEL -->
     <aside class="right-panel">
       <h2 class="panel-title">Customization Tools</h2>
 
@@ -112,9 +109,176 @@
     </aside>
   </div>
 
-  <div class="flow-indicator arrow-left-center">→</div>
-  <div class="flow-indicator arrow-center-right">→</div>
-
   <script src="/assets/app.js"></script>
+
+  <!-- PAGE-SPECIFIC SCRIPT -->
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const cards          = Array.from(document.querySelectorAll(".cover-card"));
+      const titleInput     = document.querySelector(".text-input");
+      const fontSelect     = document.querySelector(".right-panel .dropdown");
+      const swatches       = Array.from(document.querySelectorAll(".color-swatch"));
+      const regenBtn       = document.querySelector(".regenerate-btn");
+      const playlistSelect = document.getElementById("playlistSelect");
+      const moodEl         = document.getElementById("playlistMood");
+
+      function mapUiFont(name) {
+        switch ((name || "").toLowerCase()) {
+          case "classic serif":  return "Georgia, 'Times New Roman', serif";
+          case "bold display":   return "'Impact','Haettenschweiler','Arial Black',sans-serif";
+          case "elegant script": return "'Brush Script MT',cursive,'Segoe Script'";
+          default:               return "Inter,'Segoe UI',sans-serif";
+        }
+      }
+
+      function getSelectedCard() {
+        return document.querySelector(".cover-card.selected");
+      }
+
+      //Card selection 
+      cards.forEach(card => {
+        const btn = card.querySelector(".select-btn");
+        btn.addEventListener("click", () => {
+          cards.forEach(c => c.classList.remove("selected"));
+          card.classList.add("selected");
+          applyToCard(card);
+        });
+      });
+
+      //Apply current controls to card preview
+      function applyToCard(card) {
+        if (!card) return;
+        const preview = card.querySelector(".cover-preview");
+        if (!preview) return;
+
+        const title  = (titleInput.value || "").trim() || "";
+        const fontUi = fontSelect.value;
+        const swatch = document.querySelector(".color-swatch.selected");
+
+        preview.textContent = title;
+        preview.style.fontFamily = mapUiFont(fontUi);
+
+        const hasAiImage =
+          preview.style.backgroundImage &&
+          preview.style.backgroundImage !== "none";
+
+        if (swatch) {
+          const color = getComputedStyle(swatch).backgroundColor;
+
+          //  If there is NO AI image yet, let palette control background
+          if (!hasAiImage) {
+            preview.style.backgroundImage = "none";
+            preview.style.backgroundColor = color;
+            preview.style.color = "#1a1d2e";
+          }
+
+          // Always let the swatch control the border accent
+          card.style.borderColor = color;
+        }
+      }
+
+      // title / font changes
+      titleInput.addEventListener("input", () => applyToCard(getSelectedCard()));
+      fontSelect.addEventListener("change", () => applyToCard(getSelectedCard()));
+
+      // color swatch click
+      swatches.forEach(sw => {
+        sw.addEventListener("click", () => {
+          swatches.forEach(s => s.classList.remove("selected"));
+          sw.classList.add("selected");
+          applyToCard(getSelectedCard());
+        });
+      });
+
+      // Helper: get songs list
+      function getCurrentSongs() {
+        return Array.from(document.querySelectorAll("#songList .song-item"))
+          .map(el => el.textContent.trim())
+          .filter(Boolean);
+      }
+
+      // generate call backend 
+      async function generateAI() {
+        const selected = getSelectedCard();
+        if (!selected) return;
+
+        const originalLabel = regenBtn.textContent;
+        regenBtn.disabled = true;
+        regenBtn.textContent = "Generating...";
+
+        let title = "";
+        let subtitle = "";
+
+        if (playlistSelect && playlistSelect.value) {
+          try {
+            const sel = JSON.parse(playlistSelect.value);
+            title    = sel.title    || title;
+            subtitle = sel.subtitle || "";
+          } catch (e) {
+            console.warn("Playlist parse failed:", e);
+          }
+        }
+
+        const songs = getCurrentSongs();
+
+        try {
+          const res = await fetch("/api/generate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ title, subtitle, songs })
+          });
+
+          if (!res.ok) {
+            const txt = await res.text();
+            console.error("Backend error:", txt);
+            throw new Error("Bad /api/generate response");
+          }
+
+          const data   = await res.json();
+          const images = data.images || [];
+          const mood   = data.mood;
+          const top10  = data.top10 || [];
+
+          if (moodEl && mood) {
+            moodEl.textContent = `Detected mood: ${mood}`;
+          }
+          console.log("Top 10 vibe songs:", top10);
+
+          // Save first image for Customize page
+          if (images[0]) {
+            localStorage.setItem("ai_album_image", images[0]);
+          }
+
+          // Apply images to cards
+          images.forEach((url, i) => {
+            const card = cards[i];
+            if (!card) return;
+            const preview = card.querySelector(".cover-preview");
+            if (!preview) return;
+
+            preview.style.backgroundImage    = `url(${url})`;
+            preview.style.backgroundSize     = "cover";
+            preview.style.backgroundPosition = "center";
+            preview.style.backgroundRepeat   = "no-repeat";
+            preview.style.backgroundColor    = "#000";
+
+            // Re-apply text / font / border, but keep image
+            applyToCard(card);
+          });
+        } catch (err) {
+          console.error(err);
+          alert("Error generating AI covers (check terminal).");
+        } finally {
+          regenBtn.disabled = false;
+          regenBtn.textContent = originalLabel;
+        }
+      }
+
+      if (regenBtn) {
+        regenBtn.addEventListener("click", generateAI);
+      }
+    });
+  </script>
+
 </body>
 </html>
