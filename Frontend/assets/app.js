@@ -115,7 +115,7 @@
       const selected = document.querySelector('.cover-card.selected');
       if (!selected) return;
   
-      const title = titleInputEl?.value?.trim() || 'My Playlist';
+      const title = titleInputEl?.value?.trim() || '';
       selected.dataset.title = title;
   
       const fontUi = fontSelectEl?.value || 'Modern Sans';
@@ -136,7 +136,7 @@
       if (!selected) { alert('Select a cover first'); return; }
   
       const meta = {
-        title: selected.dataset.title || (titleInputEl?.value?.trim() || 'My Playlist'),
+        title: selected.dataset.title || (titleInputEl?.value?.trim() || ''),
         fontCss: mapUiFont(selected.dataset.font || (fontSelectEl?.value || 'Modern Sans')),
         c1: selected.dataset.c1 || '#8a5cf6',
         c2: selected.dataset.c2 || '#f06292',
@@ -253,7 +253,7 @@
     ctx.fillStyle = fg; ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
     ctx.font = `800 ${titlePx}px ${fontCss}`;
   
-    const lines = wrapLines(ctx, title || 'My Playlist', size - pad*2);
+    const lines = wrapLines(ctx, title || '', size - pad*2);
     let y = size - pad;
     for (let i = lines.length - 1; i >= 0; i--) {
       ctx.fillText(lines[i], pad, y);
@@ -408,7 +408,7 @@
     }
     function applyAll() {
       // text & font
-      canvasTitle.textContent = titleIn.value || 'My Playlist';
+      canvasTitle.textContent = titleIn.value || '';
       const sub = subIn.value?.trim();
       canvasTitle.style.fontFamily = mapUiFont(fontIn.value);
       canvasTitle.style.fontWeight = mapWeightUi();
@@ -465,7 +465,7 @@
     }
   
     function currentMeta() {
-      const title = titleIn.value.trim() || 'My Playlist';
+      const title = titleIn.value.trim() || '';
       const sub = subIn.value.trim();
       const titleWithSubtitle = sub ? `${title} — ${sub}` : title;
       return {

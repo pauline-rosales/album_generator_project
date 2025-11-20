@@ -1,7 +1,6 @@
 {
   "name": "album_generator_project",
   "version": "1.0.0",
-  "description": "",
   "main": "index.js",
   "scripts": {
     "start": "node ./Frontend/server.js",
@@ -10,6 +9,18 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "express": "^5.1.0"
-  }
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "openai": "^6.8.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pauline-rosales/album_generator_project.git"
+  },
+  "keywords": [],
+  "bugs": {
+    "url": "https://github.com/pauline-rosales/album_generator_project/issues"
+  },
+  "homepage": "https://github.com/pauline-rosales/album_generator_project#readme",
+  "description": ""
 }
