@@ -155,7 +155,7 @@ Playlist:
 ${playlistText}
     `.trim();
 
-    // 1) Ask text model for mood + imagePrompt
+    // 1) Ask text model ONCE for overall mood + base imagePrompt
     const raw = await cfText(moodPrompt);
 
     let parsed;
@@ -165,12 +165,11 @@ ${playlistText}
       parsed = JSON.parse(jsonStr);
     } catch (e) {
       console.warn('Failed to parse JSON from text model, using fallback shape:', e);
-      // Fallback if the model missed strict JSON
       parsed = {
         mood: 'mixed but emotional',
         top10: songs.slice(0, 10),
         imagePrompt:
-          `A simple  album cover that visually matches the overall mood of the playlist. ` +
+          `A simple album cover that visually matches the overall mood of the playlist. ` +
           `Use colors and lighting that feel like the songs (for example, calm and soft, bright and energetic, or dark and moody). ` +
           `Only use visual elements like shapes, colors, or a basic scene. No text, no letters, no numbers, no logos, no captions.`
       };
@@ -186,21 +185,82 @@ ${playlistText}
     let imagePrompt = parsed.imagePrompt;
     if (!imagePrompt || typeof imagePrompt !== 'string' || !imagePrompt.trim()) {
       imagePrompt =
-        `A simple  album cover whose colors and lighting match the overall mood of the playlist songs. ` +
+        `A simple album cover whose colors and lighting match the overall mood of the playlist songs. ` +
         `Use only visual elements (shapes, gradients, or a basic scene) that fit the emotion of the songs. ` +
         `No text, no letters, no numbers, no symbols, no logos, no captions.`;
     }
 
-    // 2) Generate with Cloudflare SDXL
-    const imgBuf = await cfImage(imagePrompt);
-    const base64 = imgBuf.toString('base64');
-    const dataUrl = `data:image/png;base64,${base64}`;
+    // 🔹 NEW: split the playlist into first half / second half
+    let firstHalf = [];
+    let secondHalf = [];
 
-    // 3) Return same image for all 3 cards
+    if (songs.length > 0) {
+      const mid = Math.ceil(songs.length / 2);
+      firstHalf = songs.slice(0, mid);
+      secondHalf = songs.slice(mid);
+    }
+
+    // Fallbacks in case playlist is tiny
+    if (firstHalf.length === 0 && songs.length) firstHalf = songs;
+    if (secondHalf.length === 0 && songs.length) secondHalf = songs;
+
+    const firstHalfLines = firstHalf.map(s => `- ${s}`).join('\n');
+    const secondHalfLines = secondHalf.map(s => `- ${s}`).join('\n');
+
+    // 2) Build three distinct prompts for the image model
+    const prompts = [
+      // Image 1 – title / overall vibe
+      `
+${imagePrompt}
+
+Variation 1 – Focus on the overall playlist title and vibe.
+Playlist title: ${title}
+Playlist subtitle: ${subtitle}
+
+Do NOT include any text, letters, numbers, logos, or captions in the image itself.
+      `.trim(),
+
+      // Image 2 – first half of songs
+      `
+${imagePrompt}
+
+Variation 2 – Focus on the opening half of the playlist.
+These songs define the vibe for this cover:
+${firstHalfLines}
+
+Do NOT include any text, letters, numbers, logos, or captions in the image itself.
+      `.trim(),
+
+      // Image 3 – second half of songs
+      `
+${imagePrompt}
+
+Variation 3 – Focus on the closing half of the playlist.
+These songs define the vibe for this cover:
+${secondHalfLines}
+
+Do NOT include any text, letters, numbers, logos, or captions in the image itself.
+      `.trim()
+    ];
+
+    // 3) Generate 3 images with Cloudflare SDXL (one per prompt)
+    const buffers = await Promise.all(prompts.map(p => cfImage(p)));
+
+    const images = buffers.map(buf => {
+      const base64 = buf.toString('base64');
+      return `data:image/png;base64,${base64}`;
+    });
+
+    // (Optional) store first one for Customize page like before
+    if (images[0]) {
+      // You'll still set this in the frontend; server just returns images[]
+    }
+
+    // 4) Send back mood + top10 + 3 different images
     res.json({
       mood,
       top10,
-      images: [dataUrl, dataUrl, dataUrl]
+      images
     });
   } catch (err) {
     console.error('AI generation error:', err);
@@ -210,6 +270,7 @@ ${playlistText}
     });
   }
 });
+
 
 //404 fallback send Home
 app.use((_, res) => res.status(404).sendFile(path.join(PUBLIC_DIR, 'index.html')));
