@@ -25,13 +25,18 @@
 
     /* Navigation Bar */
     .navbar {
-      background: #22263a;
-      height: 70px;
-      display: flex;
-      align-items: center;
-      padding: 0 40px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-    }
+    background: #22263a;
+    height: 70px;
+    display: flex;
+    align-items: center;
+    padding: 0 40px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+  }
 
     .logo {
       font-size: 1.3em;
@@ -73,6 +78,7 @@
       grid-template-columns: 300px 1fr 340px;
       height: calc(100vh - 70px);
       gap: 0;
+      margin-top: 70px; /* so content starts under the fixed navbar */
     }
 
     /* Left Panel */
@@ -243,15 +249,16 @@
     }
 
     .canvas-area {
-      flex: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: rgba(0, 0, 0, 0.2);
-      border-radius: 16px;
-      padding: 40px;
-      min-height: 400px;
-    }
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 16px;
+    padding: 40px;
+    min-height: 400px;
+    overflow: hidden; /* so zoom crops the edges instead of spilling */
+   }
 
     .cover-canvas {
       width: 100%;
@@ -264,11 +271,16 @@
       justify-content: center;
       box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
       border: 1px solid rgba(255, 255, 255, 0.1);
+      position: relative;
+      overflow: hidden;
+      transform-origin: center center;
     }
 
     .canvas-content {
       padding: 40px;
       text-align: center;
+      position: relative;
+      z-index: 1;
     }
 
     .canvas-content h2 {
@@ -279,6 +291,17 @@
       margin-top: 0;
       font-size: 14px;
       opacity: 0.9;
+    }
+
+
+    /* Light effect overlay */
+    .light-effect-overlay {
+      position: absolute;
+      inset: -20%;
+      pointer-events: none;
+      opacity: 0.8;
+      mix-blend-mode: screen;
+      z-index: 0;
     }
 
     .action-bar {
@@ -498,6 +521,7 @@
       pointer-events: auto;
       user-select: none;
       cursor: grab;
+      z-index: 2;
     }
 
     .sticker-instance:active {
@@ -633,6 +657,9 @@
         </div>
         <div class="canvas-area">
           <div id="customCanvas" class="cover-canvas">
+            <!-- light effect overlay -->
+            <div id="lightOverlay" class="light-effect-overlay"></div>
+
             <div id="canvasInner" class="canvas-content">
               <h2 id="canvasTitle">Late Night Vibes</h2>
               <p id="canvasSubtitle"></p>
@@ -750,6 +777,18 @@
         </select>
       </div>
 
+      <!-- Light Effects (lens flare / light leaks) -->
+      <div class="control-group">
+        <div class="control-label">Light Effects</div>
+        <select id="lightEffect" class="dropdown">
+          <option value="none">None</option>
+          <option value="soft-glow">Soft Glow</option>
+          <option value="neon-flare">Neon Flare</option>
+          <option value="retro-leak">Retro Light Leak</option>
+          <option value="sunset-beam">Sunset Beam</option>
+        </select>
+      </div>
+
       <!-- Stickers (OpenMoji) -->
       <div class="control-group">
         <div class="control-label">Stickers</div>
@@ -770,13 +809,14 @@
   <!-- Shared app logic (nav highlight, etc.) -->
   <script src="/assets/app.js"></script>
 
-  <!-- Page-specific logic: load selected cover + controls + undo/redo + zoom/grid + stickers -->
+  <!-- Page-specific logic: load selected cover + controls + undo/redo + zoom/grid + stickers + light effects -->
   <script>
     document.addEventListener("DOMContentLoaded", () => {
       const canvas       = document.getElementById("customCanvas");
       const canvasInner  = document.getElementById("canvasInner");
       const canvasTitle  = document.getElementById("canvasTitle");
       const canvasSub    = document.getElementById("canvasSubtitle");
+      const lightOverlay = document.getElementById("lightOverlay");
 
       const titleInput   = document.getElementById("custTitle");
       const subInput     = document.getElementById("custSubtitleInput");
@@ -797,11 +837,16 @@
       const fxBlur       = document.getElementById("fxBlur");
       const filterSelect = document.getElementById("custFilter");
 
+      const lightEffectSelect = document.getElementById("lightEffect");
+
       const resetBtn     = document.getElementById("custReset");
       const saveBtn      = document.getElementById("custSave");
 
       const undoBtn      = document.getElementById("undoBtn");
       const redoBtn      = document.getElementById("redoBtn");
+
+      // Track if we are using a generated cover image
+      let hasCoverImage = false;
 
       // --- ZOOM + GRID BUTTONS ---
       const toolButtons = Array.from(document.querySelectorAll(".tool-btn"));
@@ -815,9 +860,9 @@
       const ZOOM_MAX  = 1.8;
 
       function applyZoom() {
-      canvas.style.transform = `scale(${zoomLevel})`;
-      canvas.style.transformOrigin = "center center";
-    }
+        canvas.style.transform = "scale(" + zoomLevel + ")";
+        canvas.style.transformOrigin = "center center";
+      }
 
       let gridOn = false;
       let gridOverlay = null;
@@ -895,8 +940,15 @@
         const s = bgStart.value || "#a7c7e7";
         const e = bgEnd.value   || "#c9b8f0";
         const o = Math.max(0, Math.min(100, parseInt(bgOpacity.value || "100", 10))) / 100;
-        canvas.style.backgroundImage = `linear-gradient(135deg, ${s} 0%, ${e} 100%)`;
-        canvas.style.opacity = o.toFixed(2);
+
+        if (hasCoverImage) {
+          // Don't overwrite image; just fade the whole cover
+          canvas.style.opacity = o.toFixed(2);
+        } else {
+          // No image → gradient background
+          canvas.style.backgroundImage = "linear-gradient(135deg, " + s + " 0%, " + e + " 100%)";
+          canvas.style.opacity = o.toFixed(2);
+        }
       }
 
       function applyFilter() {
@@ -921,6 +973,30 @@
           f = (f ? f + " " : "") + "blur(2px)";
         }
         canvas.style.filter = f || "none";
+      }
+
+      function applyLightEffect() {
+        if (!lightOverlay) return;
+        const val = (lightEffectSelect.value || "none").toLowerCase();
+        lightOverlay.style.backgroundImage = "none";
+
+        if (val === "soft-glow") {
+          lightOverlay.style.backgroundImage =
+            "radial-gradient(circle at 30% 0%, rgba(255,255,255,0.5), transparent 60%)," +
+            "radial-gradient(circle at 80% 80%, rgba(255,192,203,0.35), transparent 65%)";
+        } else if (val === "neon-flare") {
+          lightOverlay.style.backgroundImage =
+            "radial-gradient(circle at 10% 10%, rgba(0,255,255,0.45), transparent 55%)," +
+            "radial-gradient(circle at 90% 60%, rgba(255,0,255,0.45), transparent 60%)";
+        } else if (val === "retro-leak") {
+          lightOverlay.style.backgroundImage =
+            "radial-gradient(circle at 0% 40%, rgba(255,200,120,0.55), transparent 60%)," +
+            "radial-gradient(circle at 0% 80%, rgba(255,120,160,0.45), transparent 65%)";
+        } else if (val === "sunset-beam") {
+          lightOverlay.style.backgroundImage =
+            "linear-gradient(120deg, rgba(255,183,77,0.6), rgba(244,143,177,0.0) 60%)," +
+            "linear-gradient(140deg, rgba(255,235,59,0.35), transparent 55%)";
+        }
       }
 
       function applyFromControls() {
@@ -976,6 +1052,8 @@
 
         // Filters + blur
         applyFilter();
+        // Light overlay
+        applyLightEffect();
       }
 
       function getCurrentState() {
@@ -997,8 +1075,10 @@
           fxGlow: fxGlow.checked,
           fxBlur: fxBlur.checked,
           filter: filterSelect.value,
+          lightEffect: lightEffectSelect.value,
           canvasBackgroundImage: canvas.style.backgroundImage || "",
-          canvasOpacity: canvas.style.opacity || "1"
+          canvasOpacity: canvas.style.opacity || "1",
+          hasCoverImage: hasCoverImage
         };
       }
 
@@ -1028,6 +1108,14 @@
         fxBlur.checked   = !!state.fxBlur;
         filterSelect.value = state.filter;
 
+        lightEffectSelect.value = state.lightEffect || "none";
+
+        hasCoverImage = !!state.hasCoverImage;
+
+        if (!hasCoverImage) {
+          canvas.style.backgroundImage = "";
+        }
+
         updateGradient();
 
         if (state.canvasBackgroundImage && state.canvasBackgroundImage !== "none") {
@@ -1048,49 +1136,71 @@
       }
 
       function loadFromSelectedCover() {
-        try {
-          const raw = localStorage.getItem("selected_cover_config");
-          if (!raw) {
-            updateGradient();
-            applyFromControls();
-            return;
-          }
-          const cfg = JSON.parse(raw);
+  try {
+    let raw = null;
 
-          if (cfg.title) {
-            titleInput.value = cfg.title;
-            canvasTitle.textContent = cfg.title;
-          }
+    // Try localStorage first
+    try {
+      raw = window.localStorage.getItem("selected_cover_config");
+    } catch (e) {
+      console.warn("localStorage blocked, will try sessionStorage:", e);
+    }
 
-          if (cfg.font) {
-            const opts = Array.from(fontSelect.options).map(o => o.value);
-            if (opts.includes(cfg.font)) {
-              fontSelect.value = cfg.font;
-            }
-          }
-
-          if (cfg.backgroundImage) {
-            canvas.style.backgroundImage    = cfg.backgroundImage;
-            canvas.style.backgroundSize     = "cover";
-            canvas.style.backgroundPosition = "center";
-            canvas.style.backgroundRepeat   = "no-repeat";
-            canvas.style.opacity            = "1";
-          } else {
-            if (cfg.color) {
-              const hex = rgbToHexOrSame(cfg.color, bgStart.value);
-              bgStart.value = hex;
-              bgEnd.value   = hex;
-            }
-            updateGradient();
-          }
-
-          applyFromControls();
-        } catch (e) {
-          console.error("Failed to load selected_cover_config:", e);
-          updateGradient();
-          applyFromControls();
-        }
+    // Fallback: sessionStorage
+    if (!raw) {
+      try {
+        raw = window.sessionStorage.getItem("selected_cover_config");
+      } catch (e2) {
+        console.warn("sessionStorage also blocked:", e2);
       }
+    }
+
+    if (!raw) {
+      hasCoverImage = false;
+      updateGradient();
+      applyFromControls();
+      return;
+    }
+
+    const cfg = JSON.parse(raw);
+
+    if (cfg.title) {
+      titleInput.value = cfg.title;
+      canvasTitle.textContent = cfg.title;
+    }
+
+    if (cfg.font) {
+      const opts = Array.from(fontSelect.options).map(o => o.value);
+      if (opts.includes(cfg.font)) {
+        fontSelect.value = cfg.font;
+      }
+    }
+
+    if (cfg.backgroundImage && cfg.backgroundImage !== "none") {
+      hasCoverImage = true;
+      canvas.style.backgroundImage    = cfg.backgroundImage;
+      canvas.style.backgroundSize     = "cover";
+      canvas.style.backgroundPosition = "center";
+      canvas.style.backgroundRepeat   = "no-repeat";
+      canvas.style.opacity            = "1";
+    } else {
+      hasCoverImage = false;
+      if (cfg.color) {
+        const hex = rgbToHexOrSame(cfg.color, bgStart.value);
+        bgStart.value = hex;
+        bgEnd.value   = hex;
+      }
+      updateGradient();
+    }
+
+      applyFromControls();
+    } catch (e) {
+      console.error("Failed to load selected_cover_config:", e);
+      hasCoverImage = false;
+      updateGradient();
+      applyFromControls();
+    }
+  }
 
       // --- EVENT WIRING ---
       titleInput.addEventListener("input", () => {
@@ -1114,12 +1224,16 @@
       });
 
       bgStart.addEventListener("input", () => {
+        hasCoverImage = false;
+        canvas.style.backgroundImage = "";
         updateGradient();
         applyFromControls();
         pushStateToHistory();
       });
 
       bgEnd.addEventListener("input", () => {
+        hasCoverImage = false;
+        canvas.style.backgroundImage = "";
         updateGradient();
         applyFromControls();
         pushStateToHistory();
@@ -1174,11 +1288,18 @@
         pushStateToHistory();
       });
 
+      lightEffectSelect.addEventListener("change", () => {
+        applyFromControls();
+        pushStateToHistory();
+      });
+
       const templates = Array.from(document.querySelectorAll(".template-card"));
       templates.forEach(card => {
         card.addEventListener("click", () => {
           const c1 = card.dataset.c1 || "#a7c7e7";
           const c2 = card.dataset.c2 || "#c9b8f0";
+          hasCoverImage = false;
+          canvas.style.backgroundImage = "";
           bgStart.value = c1;
           bgEnd.value   = c2;
           updateGradient();
@@ -1198,10 +1319,12 @@
         fontSelect.value = "Modern Sans";
 
         posButtons.forEach(b => b.classList.remove("active"));
-        posButtons.find(b => b.dataset.pos === "center")?.classList.add("active");
+        const centerBtn = posButtons.find(b => b.dataset.pos === "center");
+        if (centerBtn) centerBtn.classList.add("active");
 
         weightButtons.forEach(b => b.classList.remove("active"));
-        weightButtons.find(b => b.dataset.w === "600")?.classList.add("active");
+        const midW = weightButtons.find(b => b.dataset.w === "600");
+        if (midW) midW.classList.add("active");
 
         textColor.value = "#ffffff";
         bgStart.value   = "#a7c7e7";
@@ -1212,8 +1335,10 @@
         fxGlow.checked   = false;
         fxBlur.checked   = false;
         filterSelect.value = "None";
+        lightEffectSelect.value = "none";
 
         canvas.style.backgroundImage = "";
+        hasCoverImage = false;
         updateGradient();
         applyFromControls();
 
@@ -1239,7 +1364,8 @@
           textColor: textColor.value,
           bgStart: bgStart.value,
           bgEnd: bgEnd.value,
-          bgOpacity: bgOpacity.value
+          bgOpacity: bgOpacity.value,
+          lightEffect: lightEffectSelect.value
         };
         try {
           localStorage.setItem("customize_saved_cover", JSON.stringify(payload));
@@ -1259,7 +1385,7 @@
       if (undoBtn) {
         undoBtn.addEventListener("click", () => {
           if (historyStack.length <= 1) return;
-          const current = historyStack.pop();
+          historyStack.pop(); // current
           const previous = historyStack[historyStack.length - 1];
           isRestoringState = true;
           applyState(previous);
@@ -1281,31 +1407,30 @@
       const OPENMOJI_BASE = "https://openmoji.org/data/color/svg/";
 
       const STICKERS = [
-        { id: "sparkly-heart", label: "Sparkly Heart", hex: "1F496" },
-        { id: "pink-heart",    label: "Pink Heart",    hex: "1F497" },
-        { id: "sparkles",      label: "Sparkles",      hex: "2728"  },
-        { id: "star",          label: "Star",          hex: "2B50"  },
-        { id: "music-note",    label: "Music Note",    hex: "1F3B5" },
-        { id: "headphones",    label: "Headphones",    hex: "1F3A7" },
-        { id: "flower",        label: "Flower",        hex: "1F33C" },
-        { id: "cherry-blossom",label: "Blossom",       hex: "1F338" }
+        { id: "sparkly-heart",  label: "Sparkly Heart", hex: "1F496" },
+        { id: "pink-heart",     label: "Pink Heart",    hex: "1F497" },
+        { id: "sparkles",       label: "Sparkles",      hex: "2728"  },
+        { id: "star",           label: "Star",          hex: "2B50"  },
+        { id: "music-note",     label: "Music Note",    hex: "1F3B5" },
+        { id: "headphones",     label: "Headphones",    hex: "1F3A7" },
+        { id: "flower",         label: "Flower",        hex: "1F33C" },
+        { id: "cherry-blossom", label: "Blossom",       hex: "1F338" }
       ];
 
       const stickerListEl = document.getElementById("stickerList");
       let stickerIdCounter = 0;
 
       if (stickerListEl && canvas) {
-      STICKERS.forEach(sticker => {
-        const img = document.createElement("img");
-        img.src = OPENMOJI_BASE + sticker.hex + ".svg"; // or template literal
-        img.alt = sticker.label;
-        img.title = sticker.label;
-        img.className = "sticker-thumb";
+        STICKERS.forEach(sticker => {
+          const img = document.createElement("img");
+          img.src = OPENMOJI_BASE + sticker.hex + ".svg";
+          img.alt = sticker.label;
+          img.title = sticker.label;
+          img.className = "sticker-thumb";
 
-        img.addEventListener("click", () => {
-        addStickerToCanvas(`${OPENMOJI_BASE}${sticker.hex}.svg`);
-      });
-
+          img.addEventListener("click", () => {
+            addStickerToCanvas(OPENMOJI_BASE + sticker.hex + ".svg");
+          });
 
           stickerListEl.appendChild(img);
         });
@@ -1316,7 +1441,6 @@
         sticker.src = src;
         sticker.className = "sticker-instance";
         sticker.dataset.stickerId = "sticker-" + (++stickerIdCounter);
-
 
         // center of the cover
         const rect = canvas.getBoundingClientRect();
@@ -1352,8 +1476,8 @@
             if (!isDragging) return;
             const dx = ev.clientX - startX;
             const dy = ev.clientY - startY;
-            el.style.left = startLeft + dx + "px";
-            el.style.top  = startTop  + dy + "px";
+            el.style.left = (startLeft + dx) + "px";
+            el.style.top  = (startTop  + dy) + "px";
           }
 
           function onMouseUp() {

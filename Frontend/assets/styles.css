@@ -209,6 +209,7 @@ body{
 /* Make the canvas a positioned container so we can overlay the grid */
 .cover-canvas {
   position: relative;
+  transition: transform 0.2s ease; /* smooth zoom */
 }
 
 /* Ensure the text/content stays above the grid overlay */

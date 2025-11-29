@@ -237,35 +237,61 @@
         }, 2000);
       }
 
-      // Apply Changes handler: save selected cover config for Customize page
-      if (applyBtn) {
-        applyBtn.addEventListener("click", () => {
-          const selected = getSelectedCard();
-          if (!selected) return;
+    // Apply Changes handler: save selected cover config for Customize page
+    if (applyBtn) {
+      applyBtn.addEventListener("click", () => {
+        const selected = getSelectedCard();
+        if (!selected) return;
 
-          const preview = selected.querySelector(".cover-preview");
-          if (!preview) return;
+        const preview = selected.querySelector(".cover-preview");
+        if (!preview) return;
 
-          const swatch = document.querySelector(".color-swatch.selected");
-          const color  = swatch ? getComputedStyle(swatch).backgroundColor : null;
+        const swatch = document.querySelector(".color-swatch.selected");
+        const color  = swatch ? getComputedStyle(swatch).backgroundColor : null;
 
-          const payload = {
-            title: (titleInput.value || "").trim(),
-            font:  fontSelect.value,
-            color,
-            // Store inline background image string if one exists (e.g., "url(…)")
-            backgroundImage: preview.style.backgroundImage || null
-          };
+        // Decide if there's actually an AI image applied
+        const rawBg = preview.style.backgroundImage;
+        const hasRealImage =
+          rawBg &&
+          rawBg !== "none" &&
+          !rawBg.startsWith("linear-gradient"); // just in case
 
+        const payload = {
+          title: (titleInput?.value || "").trim(),
+          font:  fontSelect?.value || "Modern Sans",
+          color,
+          backgroundImage: hasRealImage ? rawBg : null
+        };
+
+
+        const payloadStr = JSON.stringify(payload);
+        let saved = false;
+
+        // Try localStorage first, then fall back to sessionStorage
+        try {
+          window.localStorage.setItem("selected_cover_config", payloadStr);
+          saved = true;
+        } catch (e) {
+          console.warn("localStorage failed, trying sessionStorage:", e);
           try {
-            localStorage.setItem("selected_cover_config", JSON.stringify(payload));
-            showToast("Changes applied – ready to customize ✨");
-          } catch (e) {
-            console.error("Failed to save selected cover config:", e);
-            showToast("Error saving changes");
+            window.sessionStorage.setItem("selected_cover_config", payloadStr);
+            saved = true;
+          } catch (e2) {
+            console.error("sessionStorage also failed:", e2);
           }
-        });
-      }
+        }
+
+        if (saved) {
+          showToast("Changes applied – opening Customize ✨");
+        } else {
+          showToast("Couldn't save locally, but we'll still open Customize 👉");
+        }
+
+        setTimeout(() => {
+          window.location.href = "/customize";
+        }, 600);
+      });
+    }
 
       // generate call backend 
       async function generateAI() {
