@@ -579,10 +579,10 @@
       <div class="section-header">
         <h2 class="section-title">Cover Editor</h2>
         <div style="display: flex; gap: 12px;">
-          <button class="regenerate-btn">Undo</button>
-          <button class="regenerate-btn">Redo</button>
+          <button id="undoBtn" class="regenerate-btn">Undo</button>
+          <button id="redoBtn" class="regenerate-btn">Redo</button>
         </div>
-      </div>
+      </div>      
 
       <div class="canvas-container">
         <div class="canvas-toolbar">
@@ -718,7 +718,7 @@
   <!-- Shared app logic (nav highlight, etc.) -->
   <script src="/assets/app.js"></script>
 
-  <!-- Page-specific logic: load selected cover + controls -->
+  <!-- Page-specific logic: load selected cover + controls + undo/redo -->
   <script>
     document.addEventListener("DOMContentLoaded", () => {
       const canvas       = document.getElementById("customCanvas");
@@ -748,6 +748,15 @@
       const resetBtn     = document.getElementById("custReset");
       const saveBtn      = document.getElementById("custSave");
 
+      const undoBtn      = document.getElementById("undoBtn");
+      const redoBtn      = document.getElementById("redoBtn");
+
+      // --- HISTORY & ORIGINAL STATE ---
+
+      const historyStack = [];
+      let isRestoringState = false;
+      let originalState = null; // snapshot of the original selected cover
+
       function mapUiFont(name) {
         switch ((name || "").toLowerCase()) {
           case "classic serif":
@@ -767,12 +776,12 @@
 
       function rgbToHexOrSame(colorStr, fallback) {
         if (!colorStr) return fallback;
-        const m = colorStr.match(/^rgb\\(\\s*(\\d+)\\s*,\\s*(\\d+)\\s*,\\s*(\\d+)\\s*\\)$/i);
+        const m = colorStr.match(/^rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)$/i);
         if (!m) return colorStr; // maybe already hex
         const r = Number(m[1]).toString(16).padStart(2, "0");
         const g = Number(m[2]).toString(16).padStart(2, "0");
         const b = Number(m[3]).toString(16).padStart(2, "0");
-        return "#" + (r + g + b).toUpperCase();
+        return ("#" + r + g + b).toUpperCase();
       }
 
       function updateGradient() {
@@ -862,6 +871,75 @@
         applyFilter();
       }
 
+      function getCurrentState() {
+        const activePos = posButtons.find(b => b.classList.contains("active"));
+        const activeWeight = weightButtons.find(b => b.classList.contains("active"));
+
+        return {
+          title: titleInput.value,
+          subtitle: subInput.value,
+          size: sizeInput.value,
+          font: fontSelect.value,
+          pos: activePos ? activePos.dataset.pos : "center",
+          weight: activeWeight ? activeWeight.dataset.w : "600",
+          textColor: textColor.value,
+          bgStart: bgStart.value,
+          bgEnd: bgEnd.value,
+          bgOpacity: bgOpacity.value,
+          fxShadow: fxShadow.checked,
+          fxGlow: fxGlow.checked,
+          fxBlur: fxBlur.checked,
+          filter: filterSelect.value,
+          canvasBackgroundImage: canvas.style.backgroundImage || "",
+          canvasOpacity: canvas.style.opacity || "1"
+        };
+      }
+
+      function applyState(state) {
+        if (!state) return;
+
+        titleInput.value = state.title;
+        subInput.value   = state.subtitle;
+        sizeInput.value  = state.size;
+        fontSelect.value = state.font;
+
+        posButtons.forEach(b => b.classList.remove("active"));
+        const posBtn = posButtons.find(b => b.dataset.pos === state.pos);
+        if (posBtn) posBtn.classList.add("active");
+
+        weightButtons.forEach(b => b.classList.remove("active"));
+        const wBtn = weightButtons.find(b => b.dataset.w === state.weight);
+        if (wBtn) wBtn.classList.add("active");
+
+        textColor.value = state.textColor;
+        bgStart.value   = state.bgStart;
+        bgEnd.value     = state.bgEnd;
+        bgOpacity.value = state.bgOpacity;
+
+        fxShadow.checked = !!state.fxShadow;
+        fxGlow.checked   = !!state.fxGlow;
+        fxBlur.checked   = !!state.fxBlur;
+        filterSelect.value = state.filter;
+
+        updateGradient();
+
+        if (state.canvasBackgroundImage && state.canvasBackgroundImage !== "none") {
+          canvas.style.backgroundImage = state.canvasBackgroundImage;
+          canvas.style.backgroundSize = "cover";
+          canvas.style.backgroundPosition = "center";
+          canvas.style.backgroundRepeat = "no-repeat";
+        }
+
+        canvas.style.opacity = state.canvasOpacity || "1";
+
+        applyFromControls();
+      }
+
+      function pushStateToHistory() {
+        if (isRestoringState) return;
+        historyStack.push(getCurrentState());
+      }
+
       function loadFromSelectedCover() {
         try {
           const raw = localStorage.getItem("selected_cover_config");
@@ -884,7 +962,6 @@
             }
           }
 
-          // If there is an AI image, show that as background
           if (cfg.backgroundImage) {
             canvas.style.backgroundImage    = cfg.backgroundImage;
             canvas.style.backgroundSize     = "cover";
@@ -892,7 +969,6 @@
             canvas.style.backgroundRepeat   = "no-repeat";
             canvas.style.opacity            = "1";
           } else {
-            // If we only have a color, sync gradient to that color
             if (cfg.color) {
               const hex = rgbToHexOrSame(cfg.color, bgStart.value);
               bgStart.value = hex;
@@ -909,34 +985,57 @@
         }
       }
 
-      // --- Event wiring ---
+      // --- EVENT WIRING ---
 
-      titleInput.addEventListener("input", applyFromControls);
-      subInput.addEventListener("input", applyFromControls);
-      sizeInput.addEventListener("input", applyFromControls);
+      titleInput.addEventListener("input", () => {
+        applyFromControls();
+        pushStateToHistory();
+      });
 
-      textColor.addEventListener("input", applyFromControls);
+      subInput.addEventListener("input", () => {
+        applyFromControls();
+        pushStateToHistory();
+      });
+
+      sizeInput.addEventListener("input", () => {
+        applyFromControls();
+        pushStateToHistory();
+      });
+
+      textColor.addEventListener("input", () => {
+        applyFromControls();
+        pushStateToHistory();
+      });
 
       bgStart.addEventListener("input", () => {
         updateGradient();
         applyFromControls();
+        pushStateToHistory();
       });
+
       bgEnd.addEventListener("input", () => {
         updateGradient();
         applyFromControls();
+        pushStateToHistory();
       });
+
       bgOpacity.addEventListener("input", () => {
         updateGradient();
         applyFromControls();
+        pushStateToHistory();
       });
 
-      fontSelect.addEventListener("change", applyFromControls);
+      fontSelect.addEventListener("change", () => {
+        applyFromControls();
+        pushStateToHistory();
+      });
 
       posButtons.forEach(btn => {
         btn.addEventListener("click", () => {
           posButtons.forEach(b => b.classList.remove("active"));
           btn.classList.add("active");
           applyFromControls();
+          pushStateToHistory();
         });
       });
 
@@ -945,15 +1044,30 @@
           weightButtons.forEach(b => b.classList.remove("active"));
           btn.classList.add("active");
           applyFromControls();
+          pushStateToHistory();
         });
       });
 
-      fxShadow.addEventListener("change", applyFromControls);
-      fxGlow.addEventListener("change", applyFromControls);
-      fxBlur.addEventListener("change", applyFromControls);
-      filterSelect.addEventListener("change", applyFromControls);
+      fxShadow.addEventListener("change", () => {
+        applyFromControls();
+        pushStateToHistory();
+      });
 
-      // Templates on the left: click to set gradient
+      fxGlow.addEventListener("change", () => {
+        applyFromControls();
+        pushStateToHistory();
+      });
+
+      fxBlur.addEventListener("change", () => {
+        applyFromControls();
+        pushStateToHistory();
+      });
+
+      filterSelect.addEventListener("change", () => {
+        applyFromControls();
+        pushStateToHistory();
+      });
+
       const templates = Array.from(document.querySelectorAll(".template-card"));
       templates.forEach(card => {
         card.addEventListener("click", () => {
@@ -963,10 +1077,11 @@
           bgEnd.value   = c2;
           updateGradient();
           applyFromControls();
+          pushStateToHistory();
         });
       });
 
-      // Reset: clear selected_cover_config + reset controls to defaults
+      // Reset (does NOT change originalState)
       resetBtn.addEventListener("click", () => {
         localStorage.removeItem("selected_cover_config");
 
@@ -995,9 +1110,11 @@
         canvas.style.backgroundImage = "";
         updateGradient();
         applyFromControls();
+
+        pushStateToHistory();
       });
 
-      // Save draft: just store current customize state (separate key)
+      // Save draft
       saveBtn.addEventListener("click", () => {
         const payload = {
           title: (titleInput.value || "").trim(),
@@ -1018,9 +1135,36 @@
         }
       });
 
-      // Initial load
+      // --- INITIAL LOAD + ORIGINAL STATE SNAPSHOT ---
+
       loadFromSelectedCover();
+      originalState = getCurrentState();
+      historyStack.push(originalState);
+
+      // --- UNDO / REDO ---
+
+      if (undoBtn) {
+        undoBtn.addEventListener("click", () => {
+          if (historyStack.length <= 1) return;
+          const current = historyStack.pop();
+          const previous = historyStack[historyStack.length - 1];
+          isRestoringState = true;
+          applyState(previous);
+          isRestoringState = false;
+        });
+      }
+
+      if (redoBtn) {
+        redoBtn.addEventListener("click", () => {
+          if (!originalState) return;
+          isRestoringState = true;
+          applyState(originalState);  // jump back to original cover
+          isRestoringState = false;
+          historyStack.push(getCurrentState());
+        });
+      }
     });
   </script>
+
 </body>
 </html>
