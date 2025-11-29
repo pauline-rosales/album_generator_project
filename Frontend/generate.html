@@ -109,6 +109,9 @@
     </aside>
   </div>
 
+  <!-- Toast for "changes applied" -->
+  <div id="toast" class="toast"></div>
+
   <script src="/assets/app.js"></script>
 
   <!-- PAGE-SPECIFIC SCRIPT -->
@@ -121,6 +124,8 @@
       const regenBtn       = document.querySelector(".regenerate-btn");
       const playlistSelect = document.getElementById("playlistSelect");
       const moodEl         = document.getElementById("playlistMood");
+      const applyBtn       = document.querySelector(".apply-btn");
+      const toastEl        = document.getElementById("toast");
 
       function mapUiFont(name) {
         switch ((name || "").toLowerCase()) {
@@ -162,8 +167,8 @@
             preview.style.color = "#1a1d2e";
           }
 
-          // 🔸 We do NOT touch card.style.borderColor here,
-          // so the border is fully controlled by CSS (.cover-card.selected)
+          // Border color is now handled ONLY by CSS (.cover-card.selected),
+          // so we don't touch card.style.borderColor here.
         }
       }
 
@@ -181,7 +186,7 @@
         });
       }
 
-      // Initial sync (first card starts with class="cover-card selected")
+      // Initial sync (first card starts selected)
       syncCardButtons();
 
       // Card selection: highlight + button text change
@@ -190,16 +195,9 @@
         if (!btn) return;
 
         btn.addEventListener("click", () => {
-          // Clear selection class on all cards
           cards.forEach(c => c.classList.remove("selected"));
-
-          // Mark this card as selected
           card.classList.add("selected");
-
-          // Sync button labels based on .selected
           syncCardButtons();
-
-          // Apply current controls (title, font, color) to this card
           applyToCard(card);
         });
       });
@@ -222,6 +220,51 @@
         return Array.from(document.querySelectorAll("#songList .song-item"))
           .map(el => el.textContent.trim())
           .filter(Boolean);
+      }
+
+      // Small toast helper
+      let toastTimeoutId = null;
+      function showToast(message) {
+        if (!toastEl) return;
+        toastEl.textContent = message;
+        toastEl.classList.add("show");
+
+        if (toastTimeoutId) {
+          clearTimeout(toastTimeoutId);
+        }
+        toastTimeoutId = setTimeout(() => {
+          toastEl.classList.remove("show");
+        }, 2000);
+      }
+
+      // Apply Changes handler: save selected cover config for Customize page
+      if (applyBtn) {
+        applyBtn.addEventListener("click", () => {
+          const selected = getSelectedCard();
+          if (!selected) return;
+
+          const preview = selected.querySelector(".cover-preview");
+          if (!preview) return;
+
+          const swatch = document.querySelector(".color-swatch.selected");
+          const color  = swatch ? getComputedStyle(swatch).backgroundColor : null;
+
+          const payload = {
+            title: (titleInput.value || "").trim(),
+            font:  fontSelect.value,
+            color,
+            // Store inline background image string if one exists (e.g., "url(…)")
+            backgroundImage: preview.style.backgroundImage || null
+          };
+
+          try {
+            localStorage.setItem("selected_cover_config", JSON.stringify(payload));
+            showToast("Changes applied – ready to customize ✨");
+          } catch (e) {
+            console.error("Failed to save selected cover config:", e);
+            showToast("Error saving changes");
+          }
+        });
       }
 
       // generate call backend 
@@ -271,7 +314,7 @@
           }
           console.log("Top 10 vibe songs:", top10);
 
-          // Save first image for Customize page
+          // Optionally still store first image for other use
           if (images[0]) {
             localStorage.setItem("ai_album_image", images[0]);
           }

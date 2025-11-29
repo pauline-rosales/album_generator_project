@@ -271,6 +271,16 @@
       text-align: center;
     }
 
+    .canvas-content h2 {
+      margin-bottom: 8px;
+    }
+
+    .canvas-content p {
+      margin-top: 0;
+      font-size: 14px;
+      opacity: 0.9;
+    }
+
     .action-bar {
       display: flex;
       gap: 12px;
@@ -584,6 +594,7 @@
           <div id="customCanvas" class="cover-canvas">
             <div id="canvasInner" class="canvas-content">
               <h2 id="canvasTitle">Late Night Vibes</h2>
+              <p id="canvasSubtitle"></p>
             </div>
           </div>
         </div>
@@ -602,12 +613,12 @@
     <aside class="right-panel">
       <h2 class="panel-title">Advanced Tools</h2>
 
-        <!-- Text Controls -->
-        <div class="control-group">
-          <div class="control-label">Text Content</div>
-          <input id="custTitle" type="text" class="text-input" placeholder="Title" value="Late Night Vibes">
-          <input id="custSubtitle" type="text" class="text-input" placeholder="Subtitle" value="" style="margin-top: 8px;">
-        </div>
+      <!-- Text Controls -->
+      <div class="control-group">
+        <div class="control-label">Text Content</div>
+        <input id="custTitle" type="text" class="text-input" placeholder="Title" value="Late Night Vibes">
+        <input id="custSubtitleInput" type="text" class="text-input" placeholder="Subtitle" value="" style="margin-top: 8px;">
+      </div>
 
       <div class="control-group">
         <div class="control-label">Text Size</div>
@@ -689,7 +700,7 @@
 
       <div class="control-group">
         <div class="control-label">Filters</div>
-        <select class="dropdown">
+        <select id="custFilter" class="dropdown">
           <option>None</option>
           <option>Vintage</option>
           <option>High Contrast</option>
@@ -704,7 +715,312 @@
   <div class="flow-indicator arrow-left-center">→</div>
   <div class="flow-indicator arrow-center-right">→</div>
 
-  <!-- Shared app logic (nav highlight, customize wiring, download, etc.) -->
+  <!-- Shared app logic (nav highlight, etc.) -->
   <script src="/assets/app.js"></script>
+
+  <!-- Page-specific logic: load selected cover + controls -->
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const canvas       = document.getElementById("customCanvas");
+      const canvasInner  = document.getElementById("canvasInner");
+      const canvasTitle  = document.getElementById("canvasTitle");
+      const canvasSub    = document.getElementById("canvasSubtitle");
+
+      const titleInput   = document.getElementById("custTitle");
+      const subInput     = document.getElementById("custSubtitleInput");
+      const sizeInput    = document.getElementById("custSize");
+
+      const posButtons   = Array.from(document.querySelectorAll("#custPos .group-btn"));
+      const fontSelect   = document.getElementById("custFont");
+      const weightButtons= Array.from(document.querySelectorAll("#custWeight .group-btn"));
+
+      const textColor    = document.getElementById("textColor");
+      const textColorCode= document.getElementById("textColorCode");
+      const bgStart      = document.getElementById("bgStart");
+      const bgEnd        = document.getElementById("bgEnd");
+      const bgOpacity    = document.getElementById("bgOpacity");
+
+      const fxShadow     = document.getElementById("fxShadow");
+      const fxGlow       = document.getElementById("fxGlow");
+      const fxBlur       = document.getElementById("fxBlur");
+      const filterSelect = document.getElementById("custFilter");
+
+      const resetBtn     = document.getElementById("custReset");
+      const saveBtn      = document.getElementById("custSave");
+
+      function mapUiFont(name) {
+        switch ((name || "").toLowerCase()) {
+          case "classic serif":
+            return "Georgia, 'Times New Roman', serif";
+          case "bold display":
+            return "'Impact','Haettenschweiler','Arial Black',sans-serif";
+          case "elegant script":
+            return "'Brush Script MT',cursive,'Segoe Script'";
+          case "monospace":
+            return "'Fira Code','SFMono-Regular','Menlo',monospace";
+          case "handwritten":
+            return "'Comic Sans MS','Bradley Hand','Segoe Script',cursive";
+          default:
+            return "Inter,'Segoe UI',sans-serif";
+        }
+      }
+
+      function rgbToHexOrSame(colorStr, fallback) {
+        if (!colorStr) return fallback;
+        const m = colorStr.match(/^rgb\\(\\s*(\\d+)\\s*,\\s*(\\d+)\\s*,\\s*(\\d+)\\s*\\)$/i);
+        if (!m) return colorStr; // maybe already hex
+        const r = Number(m[1]).toString(16).padStart(2, "0");
+        const g = Number(m[2]).toString(16).padStart(2, "0");
+        const b = Number(m[3]).toString(16).padStart(2, "0");
+        return "#" + (r + g + b).toUpperCase();
+      }
+
+      function updateGradient() {
+        const s = bgStart.value || "#a7c7e7";
+        const e = bgEnd.value   || "#c9b8f0";
+        const o = Math.max(0, Math.min(100, parseInt(bgOpacity.value || "100", 10))) / 100;
+        canvas.style.backgroundImage = `linear-gradient(135deg, ${s} 0%, ${e} 100%)`;
+        canvas.style.opacity = o.toFixed(2);
+      }
+
+      function applyFilter() {
+        let f = "";
+        switch ((filterSelect.value || "").toLowerCase()) {
+          case "vintage":
+            f = "sepia(0.4) contrast(1.1)";
+            break;
+          case "high contrast":
+            f = "contrast(1.3) saturate(1.1)";
+            break;
+          case "grayscale":
+            f = "grayscale(1)";
+            break;
+          case "sepia":
+            f = "sepia(1)";
+            break;
+          default:
+            f = "";
+        }
+        if (fxBlur.checked) {
+          f = (f ? f + " " : "") + "blur(2px)";
+        }
+        canvas.style.filter = f || "none";
+      }
+
+      function applyFromControls() {
+        // Title + subtitle text
+        const titleVal = (titleInput.value || "").trim() || "Untitled Playlist";
+        canvasTitle.textContent = titleVal;
+        canvasSub.textContent   = (subInput.value || "").trim();
+
+        // Font + size
+        const fontUi = fontSelect.value;
+        const fontFam= mapUiFont(fontUi);
+        canvasTitle.style.fontFamily = fontFam;
+        canvasSub.style.fontFamily   = fontFam;
+
+        const size = parseInt(sizeInput.value || "36", 10);
+        canvasTitle.style.fontSize = size + "px";
+        canvasSub.style.fontSize   = Math.max(12, size - 8) + "px";
+
+        // Font weight
+        const activeWeight = weightButtons.find(b => b.classList.contains("active"));
+        const weightVal    = activeWeight ? activeWeight.dataset.w : "600";
+        canvasTitle.style.fontWeight = weightVal;
+        canvasSub.style.fontWeight   = weightVal;
+
+        // Text color
+        const color = textColor.value || "#ffffff";
+        canvasTitle.style.color = color;
+        canvasSub.style.color   = color;
+        if (textColorCode) textColorCode.textContent = color.toUpperCase();
+
+        // Position (top / center / bottom)
+        const activePos = posButtons.find(b => b.classList.contains("active"));
+        const pos = activePos ? activePos.dataset.pos : "center";
+        if (pos === "top") {
+          canvas.style.alignItems = "flex-start";
+        } else if (pos === "bottom") {
+          canvas.style.alignItems = "flex-end";
+        } else {
+          canvas.style.alignItems = "center";
+        }
+
+        // Effects
+        let shadow = "none";
+        if (fxShadow.checked) {
+          shadow = "0 2px 8px rgba(0,0,0,0.45)";
+        }
+        if (fxGlow.checked) {
+          const glow = "0 0 16px rgba(255,255,255,0.7)";
+          shadow = shadow === "none" ? glow : shadow + ", " + glow;
+        }
+        canvasTitle.style.textShadow = shadow;
+        canvasSub.style.textShadow   = shadow;
+
+        // Filters + blur
+        applyFilter();
+      }
+
+      function loadFromSelectedCover() {
+        try {
+          const raw = localStorage.getItem("selected_cover_config");
+          if (!raw) {
+            updateGradient();
+            applyFromControls();
+            return;
+          }
+          const cfg = JSON.parse(raw);
+
+          if (cfg.title) {
+            titleInput.value = cfg.title;
+            canvasTitle.textContent = cfg.title;
+          }
+
+          if (cfg.font) {
+            const opts = Array.from(fontSelect.options).map(o => o.value);
+            if (opts.includes(cfg.font)) {
+              fontSelect.value = cfg.font;
+            }
+          }
+
+          // If there is an AI image, show that as background
+          if (cfg.backgroundImage) {
+            canvas.style.backgroundImage    = cfg.backgroundImage;
+            canvas.style.backgroundSize     = "cover";
+            canvas.style.backgroundPosition = "center";
+            canvas.style.backgroundRepeat   = "no-repeat";
+            canvas.style.opacity            = "1";
+          } else {
+            // If we only have a color, sync gradient to that color
+            if (cfg.color) {
+              const hex = rgbToHexOrSame(cfg.color, bgStart.value);
+              bgStart.value = hex;
+              bgEnd.value   = hex;
+            }
+            updateGradient();
+          }
+
+          applyFromControls();
+        } catch (e) {
+          console.error("Failed to load selected_cover_config:", e);
+          updateGradient();
+          applyFromControls();
+        }
+      }
+
+      // --- Event wiring ---
+
+      titleInput.addEventListener("input", applyFromControls);
+      subInput.addEventListener("input", applyFromControls);
+      sizeInput.addEventListener("input", applyFromControls);
+
+      textColor.addEventListener("input", applyFromControls);
+
+      bgStart.addEventListener("input", () => {
+        updateGradient();
+        applyFromControls();
+      });
+      bgEnd.addEventListener("input", () => {
+        updateGradient();
+        applyFromControls();
+      });
+      bgOpacity.addEventListener("input", () => {
+        updateGradient();
+        applyFromControls();
+      });
+
+      fontSelect.addEventListener("change", applyFromControls);
+
+      posButtons.forEach(btn => {
+        btn.addEventListener("click", () => {
+          posButtons.forEach(b => b.classList.remove("active"));
+          btn.classList.add("active");
+          applyFromControls();
+        });
+      });
+
+      weightButtons.forEach(btn => {
+        btn.addEventListener("click", () => {
+          weightButtons.forEach(b => b.classList.remove("active"));
+          btn.classList.add("active");
+          applyFromControls();
+        });
+      });
+
+      fxShadow.addEventListener("change", applyFromControls);
+      fxGlow.addEventListener("change", applyFromControls);
+      fxBlur.addEventListener("change", applyFromControls);
+      filterSelect.addEventListener("change", applyFromControls);
+
+      // Templates on the left: click to set gradient
+      const templates = Array.from(document.querySelectorAll(".template-card"));
+      templates.forEach(card => {
+        card.addEventListener("click", () => {
+          const c1 = card.dataset.c1 || "#a7c7e7";
+          const c2 = card.dataset.c2 || "#c9b8f0";
+          bgStart.value = c1;
+          bgEnd.value   = c2;
+          updateGradient();
+          applyFromControls();
+        });
+      });
+
+      // Reset: clear selected_cover_config + reset controls to defaults
+      resetBtn.addEventListener("click", () => {
+        localStorage.removeItem("selected_cover_config");
+
+        titleInput.value = "Untitled Playlist";
+        subInput.value   = "";
+        sizeInput.value  = 36;
+
+        fontSelect.value = "Modern Sans";
+
+        posButtons.forEach(b => b.classList.remove("active"));
+        posButtons.find(b => b.dataset.pos === "center")?.classList.add("active");
+
+        weightButtons.forEach(b => b.classList.remove("active"));
+        weightButtons.find(b => b.dataset.w === "600")?.classList.add("active");
+
+        textColor.value = "#ffffff";
+        bgStart.value   = "#a7c7e7";
+        bgEnd.value     = "#c9b8f0";
+        bgOpacity.value = 100;
+
+        fxShadow.checked = false;
+        fxGlow.checked   = false;
+        fxBlur.checked   = false;
+        filterSelect.value = "None";
+
+        canvas.style.backgroundImage = "";
+        updateGradient();
+        applyFromControls();
+      });
+
+      // Save draft: just store current customize state (separate key)
+      saveBtn.addEventListener("click", () => {
+        const payload = {
+          title: (titleInput.value || "").trim(),
+          subtitle: (subInput.value || "").trim(),
+          font: fontSelect.value,
+          size: sizeInput.value,
+          textColor: textColor.value,
+          bgStart: bgStart.value,
+          bgEnd: bgEnd.value,
+          bgOpacity: bgOpacity.value
+        };
+        try {
+          localStorage.setItem("customize_saved_cover", JSON.stringify(payload));
+          alert("Draft saved locally 💾");
+        } catch (e) {
+          console.error("Failed to save draft:", e);
+          alert("Error saving draft");
+        }
+      });
+
+      // Initial load
+      loadFromSelectedCover();
+    });
+  </script>
 </body>
 </html>
