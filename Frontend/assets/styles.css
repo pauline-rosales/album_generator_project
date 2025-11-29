@@ -236,3 +236,46 @@ body{
   background: rgba(255,255,255,0.12);
   border-color: rgba(201,184,240,0.4);
 }
+
+/* --- Sticker picker --- */
+
+.sticker-list {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.sticker-thumb {
+  width: 40px;
+  height: 40px;
+  padding: 4px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  cursor: pointer;
+  transition:
+    transform 0.12s ease,
+    background 0.12s ease,
+    border-color 0.12s ease;
+}
+
+.sticker-thumb:hover {
+  transform: translateY(-1px) scale(1.03);
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(201, 184, 240, 0.5);
+}
+
+/* Stickers placed on the cover */
+.sticker-instance {
+  position: absolute;
+  width: 72px;         /* tweak if you want smaller/bigger stickers */
+  height: 72px;
+  pointer-events: auto;
+  user-select: none;
+  cursor: grab;
+}
+
+.sticker-instance:active {
+  cursor: grabbing;
+}

@@ -463,6 +463,47 @@
       top: 50%;
     }
 
+    /* Sticker picker */
+    .sticker-list {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .sticker-thumb {
+      width: 40px;
+      height: 40px;
+      padding: 4px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      cursor: pointer;
+      transition:
+        transform 0.12s ease,
+        background 0.12s ease,
+        border-color 0.12s ease;
+    }
+
+    .sticker-thumb:hover {
+      transform: translateY(-1px) scale(1.03);
+      background: rgba(255, 255, 255, 0.12);
+      border-color: rgba(201, 184, 240, 0.5);
+    }
+
+    .sticker-instance {
+      position: absolute;
+      width: 72px;
+      height: 72px;
+      pointer-events: auto;
+      user-select: none;
+      cursor: grab;
+    }
+
+    .sticker-instance:active {
+      cursor: grabbing;
+    }
+
     /* Scrollbar */
     ::-webkit-scrollbar {
       width: 8px;
@@ -708,6 +749,17 @@
           <option>Sepia</option>
         </select>
       </div>
+
+      <!-- Stickers (OpenMoji) -->
+      <div class="control-group">
+        <div class="control-label">Stickers</div>
+        <div id="stickerList" class="sticker-list">
+          <!-- Filled by JS -->
+        </div>
+        <p style="margin-top: 6px; font-size: 11px; color: #8b92b0; opacity: 0.8;">
+          Emojis by OpenMoji · CC&nbsp;BY-SA&nbsp;4.0
+        </p>
+      </div>
     </aside>
   </div>
 
@@ -718,7 +770,7 @@
   <!-- Shared app logic (nav highlight, etc.) -->
   <script src="/assets/app.js"></script>
 
-  <!-- Page-specific logic: load selected cover + controls + undo/redo + zoom/grid -->
+  <!-- Page-specific logic: load selected cover + controls + undo/redo + zoom/grid + stickers -->
   <script>
     document.addEventListener("DOMContentLoaded", () => {
       const canvas       = document.getElementById("customCanvas");
@@ -752,7 +804,6 @@
       const redoBtn      = document.getElementById("redoBtn");
 
       // --- ZOOM + GRID BUTTONS ---
-
       const toolButtons = Array.from(document.querySelectorAll(".tool-btn"));
       const zoomInBtn   = toolButtons.find(btn => btn.textContent.toLowerCase().includes("zoom in"));
       const zoomOutBtn  = toolButtons.find(btn => btn.textContent.toLowerCase().includes("zoom out"));
@@ -763,12 +814,10 @@
       const ZOOM_MIN  = 0.6;
       const ZOOM_MAX  = 1.8;
 
-      //able to zoom in/out
       function applyZoom() {
       canvas.style.transform = `scale(${zoomLevel})`;
       canvas.style.transformOrigin = "center center";
     }
-
 
       let gridOn = false;
       let gridOverlay = null;
@@ -811,7 +860,6 @@
       }
 
       // --- HISTORY & ORIGINAL STATE ---
-
       const historyStack = [];
       let isRestoringState = false;
       let originalState = null; // snapshot of the original selected cover
@@ -1045,7 +1093,6 @@
       }
 
       // --- EVENT WIRING ---
-
       titleInput.addEventListener("input", () => {
         applyFromControls();
         pushStateToHistory();
@@ -1204,13 +1251,11 @@
       });
 
       // --- INITIAL LOAD + ORIGINAL STATE SNAPSHOT ---
-
       loadFromSelectedCover();
       originalState = getCurrentState();
       historyStack.push(originalState);
 
       // --- UNDO / REDO ---
-
       if (undoBtn) {
         undoBtn.addEventListener("click", () => {
           if (historyStack.length <= 1) return;
@@ -1229,6 +1274,97 @@
           applyState(originalState);  // jump back to original cover
           isRestoringState = false;
           historyStack.push(getCurrentState());
+        });
+      }
+
+      // ===================== OpenMoji Stickers =====================
+      const OPENMOJI_BASE = "https://openmoji.org/data/color/svg/";
+
+      const STICKERS = [
+        { id: "sparkly-heart", label: "Sparkly Heart", hex: "1F496" },
+        { id: "pink-heart",    label: "Pink Heart",    hex: "1F497" },
+        { id: "sparkles",      label: "Sparkles",      hex: "2728"  },
+        { id: "star",          label: "Star",          hex: "2B50"  },
+        { id: "music-note",    label: "Music Note",    hex: "1F3B5" },
+        { id: "headphones",    label: "Headphones",    hex: "1F3A7" },
+        { id: "flower",        label: "Flower",        hex: "1F33C" },
+        { id: "cherry-blossom",label: "Blossom",       hex: "1F338" }
+      ];
+
+      const stickerListEl = document.getElementById("stickerList");
+      let stickerIdCounter = 0;
+
+      if (stickerListEl && canvas) {
+      STICKERS.forEach(sticker => {
+        const img = document.createElement("img");
+        img.src = OPENMOJI_BASE + sticker.hex + ".svg"; // or template literal
+        img.alt = sticker.label;
+        img.title = sticker.label;
+        img.className = "sticker-thumb";
+
+        img.addEventListener("click", () => {
+        addStickerToCanvas(`${OPENMOJI_BASE}${sticker.hex}.svg`);
+      });
+
+
+          stickerListEl.appendChild(img);
+        });
+      }
+
+      function addStickerToCanvas(src) {
+        const sticker = document.createElement("img");
+        sticker.src = src;
+        sticker.className = "sticker-instance";
+        sticker.dataset.stickerId = "sticker-" + (++stickerIdCounter);
+
+
+        // center of the cover
+        const rect = canvas.getBoundingClientRect();
+        const centerX = rect.width / 2;
+        const centerY = rect.height / 2;
+
+        sticker.style.left = centerX + "px";
+        sticker.style.top  = centerY + "px";
+        sticker.style.transform = "translate(-50%, -50%)";
+
+        makeStickerDraggable(sticker);
+        canvas.appendChild(sticker);
+      }
+
+      function makeStickerDraggable(el) {
+        let isDragging = false;
+        let startX, startY, startLeft, startTop;
+
+        el.addEventListener("mousedown", (e) => {
+          e.preventDefault();
+          isDragging = true;
+          el.style.transform = ""; // remove center translate after first drag
+
+          const rect = el.getBoundingClientRect();
+          const parentRect = canvas.getBoundingClientRect();
+
+          startX = e.clientX;
+          startY = e.clientY;
+          startLeft = rect.left - parentRect.left;
+          startTop  = rect.top  - parentRect.top;
+
+          function onMouseMove(ev) {
+            if (!isDragging) return;
+            const dx = ev.clientX - startX;
+            const dy = ev.clientY - startY;
+            el.style.left = startLeft + dx + "px";
+            el.style.top  = startTop  + dy + "px";
+          }
+
+          function onMouseUp() {
+            if (!isDragging) return;
+            isDragging = false;
+            document.removeEventListener("mousemove", onMouseMove);
+            document.removeEventListener("mouseup", onMouseUp);
+          }
+
+          document.addEventListener("mousemove", onMouseMove);
+          document.addEventListener("mouseup", onMouseUp);
         });
       }
     });
