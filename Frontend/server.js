@@ -271,7 +271,6 @@ Do NOT include any text, letters, numbers, logos, or captions in the image itsel
   }
 });
 
-
 //404 fallback send Home
 app.use((_, res) => res.status(404).sendFile(path.join(PUBLIC_DIR, 'index.html')));
 

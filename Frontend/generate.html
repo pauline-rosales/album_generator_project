@@ -135,17 +135,7 @@
         return document.querySelector(".cover-card.selected");
       }
 
-      //Card selection 
-      cards.forEach(card => {
-        const btn = card.querySelector(".select-btn");
-        btn.addEventListener("click", () => {
-          cards.forEach(c => c.classList.remove("selected"));
-          card.classList.add("selected");
-          applyToCard(card);
-        });
-      });
-
-      //Apply current controls to card preview
+      // Apply current controls to a card preview
       function applyToCard(card) {
         if (!card) return;
         const preview = card.querySelector(".cover-preview");
@@ -165,23 +155,60 @@
         if (swatch) {
           const color = getComputedStyle(swatch).backgroundColor;
 
-          //  If there is NO AI image yet, let palette control background
+          // If there is NO AI image yet, let palette control background
           if (!hasAiImage) {
             preview.style.backgroundImage = "none";
             preview.style.backgroundColor = color;
             preview.style.color = "#1a1d2e";
           }
 
-          // Always let the swatch control the border accent
-          card.style.borderColor = color;
+          // 🔸 We do NOT touch card.style.borderColor here,
+          // so the border is fully controlled by CSS (.cover-card.selected)
         }
       }
 
-      // title / font changes
+      // Sync button labels with current selected card
+      function syncCardButtons() {
+        cards.forEach(card => {
+          const btn = card.querySelector(".select-btn");
+          if (!btn) return;
+
+          if (card.classList.contains("selected")) {
+            btn.textContent = "Selected";
+          } else {
+            btn.textContent = "Select This";
+          }
+        });
+      }
+
+      // Initial sync (first card starts with class="cover-card selected")
+      syncCardButtons();
+
+      // Card selection: highlight + button text change
+      cards.forEach(card => {
+        const btn = card.querySelector(".select-btn");
+        if (!btn) return;
+
+        btn.addEventListener("click", () => {
+          // Clear selection class on all cards
+          cards.forEach(c => c.classList.remove("selected"));
+
+          // Mark this card as selected
+          card.classList.add("selected");
+
+          // Sync button labels based on .selected
+          syncCardButtons();
+
+          // Apply current controls (title, font, color) to this card
+          applyToCard(card);
+        });
+      });
+
+      // Title / font changes
       titleInput.addEventListener("input", () => applyToCard(getSelectedCard()));
       fontSelect.addEventListener("change", () => applyToCard(getSelectedCard()));
 
-      // color swatch click
+      // Color swatch click
       swatches.forEach(sw => {
         sw.addEventListener("click", () => {
           swatches.forEach(s => s.classList.remove("selected"));
@@ -262,7 +289,7 @@
             preview.style.backgroundRepeat   = "no-repeat";
             preview.style.backgroundColor    = "#000";
 
-            // Re-apply text / font / border, but keep image
+            // Re-apply text / font (border is CSS-controlled)
             applyToCard(card);
           });
         } catch (err) {

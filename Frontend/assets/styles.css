@@ -90,11 +90,45 @@ body{
   border-radius:8px;color:#e8e9ed;font-weight:500;cursor:pointer;transition:.3s;font-size:14px
 }
 .regenerate-btn:hover{background:rgba(255,255,255,.08);border-color:rgba(180,200,220,.3)}
+
+/* --- Cover cards --- */
 .cover-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
-.cover-card{background:#22263a;border-radius:16px;padding:20px;transition:.3s;border:1px solid rgba(255,255,255,.08)}
-.cover-card:hover{transform:translateY(-4px);border-color:rgba(201,184,240,.3)}
-.cover-card.selected{border-color:#c9b8f0;background:rgba(201,184,240,.05)}
-.cover-preview{width:100%;aspect-ratio:1;border-radius:12px;background:linear-gradient(135deg,#a7c7e7 30%,#c9b8f0 70%);margin-bottom:16px;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.9);font-weight:500;font-size:14px}
+
+.cover-card{
+  background:#22263a;
+  border-radius:16px;
+  padding:20px;
+  transition:.3s;
+  border:1px solid rgba(255,255,255,.08);
+}
+
+/* Hover: just lift the card, no border color override */
+.cover-card:hover{
+  transform:translateY(-4px);
+}
+
+/* Selected cover card & button state */
+.cover-card.selected {
+  border-color: #ff70b8;
+  background: rgba(255, 112, 184, 0.08);
+  box-shadow: 0 0 0 1px rgba(255, 112, 184, 0.35);
+}
+
+.cover-card.selected .select-btn {
+  background: #ff70b8;
+  border-color: #ff70b8;
+  color: #1a1d2e;
+  font-weight: 600;
+  transform: translateY(-1px);
+}
+
+.cover-preview{
+  width:100%;aspect-ratio:1;border-radius:12px;
+  background:linear-gradient(135deg,#a7c7e7 30%,#c9b8f0 70%);
+  margin-bottom:16px;display:flex;align-items:center;justify-content:center;
+  color:rgba(255,255,255,.9);font-weight:500;font-size:14px
+}
+
 .text-input,.dropdown{
   width:100%;padding:14px;border:1px solid rgba(255,255,255,.1);border-radius:10px;font-size:14px;font-family:inherit;transition:.3s;background:rgba(255,255,255,.03);color:#e8e9ed
 }
