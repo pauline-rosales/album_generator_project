@@ -203,3 +203,36 @@ body{
   pointer-events:auto;
   transform:translateY(0);
 }
+
+/* --- Customize zoom + grid --- */
+
+/* Make the canvas a positioned container so we can overlay the grid */
+.cover-canvas {
+  position: relative;
+}
+
+/* Ensure the text/content stays above the grid overlay */
+.canvas-content {
+  position: relative;
+  z-index: 1;
+}
+
+/* Grid overlay that sits on top of the cover */
+.canvas-grid-overlay {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background-image:
+    linear-gradient(to right, rgba(255,255,255,0.55) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255,255,255,0.55) 1px, transparent 1px);
+  background-size: 20px 20px;
+  opacity: 0.5; /* stronger overall */
+}
+
+
+/* Optional: pressed state for the Grid button */
+.tool-btn.grid-active {
+  background: rgba(255,255,255,0.12);
+  border-color: rgba(201,184,240,0.4);
+}

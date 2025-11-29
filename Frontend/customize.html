@@ -8,7 +8,7 @@
   <!-- Shared styles for the site -->
   <link rel="stylesheet" href="/assets/styles.css"/>
 
-  <!-- Page-specific styles (your original CSS) -->
+  <!-- Page-specific styles (kept for now so it matches what you already had) -->
   <style>
     * {
       margin: 0;
@@ -718,7 +718,7 @@
   <!-- Shared app logic (nav highlight, etc.) -->
   <script src="/assets/app.js"></script>
 
-  <!-- Page-specific logic: load selected cover + controls + undo/redo -->
+  <!-- Page-specific logic: load selected cover + controls + undo/redo + zoom/grid -->
   <script>
     document.addEventListener("DOMContentLoaded", () => {
       const canvas       = document.getElementById("customCanvas");
@@ -750,6 +750,65 @@
 
       const undoBtn      = document.getElementById("undoBtn");
       const redoBtn      = document.getElementById("redoBtn");
+
+      // --- ZOOM + GRID BUTTONS ---
+
+      const toolButtons = Array.from(document.querySelectorAll(".tool-btn"));
+      const zoomInBtn   = toolButtons.find(btn => btn.textContent.toLowerCase().includes("zoom in"));
+      const zoomOutBtn  = toolButtons.find(btn => btn.textContent.toLowerCase().includes("zoom out"));
+      const gridBtn     = toolButtons.find(btn => btn.textContent.toLowerCase().includes("grid"));
+
+      let zoomLevel = 1;
+      const ZOOM_STEP = 0.1;
+      const ZOOM_MIN  = 0.6;
+      const ZOOM_MAX  = 1.8;
+
+      //able to zoom in/out
+      function applyZoom() {
+      canvas.style.transform = `scale(${zoomLevel})`;
+      canvas.style.transformOrigin = "center center";
+    }
+
+
+      let gridOn = false;
+      let gridOverlay = null;
+
+      function ensureGridOverlay() {
+        if (!gridOverlay) {
+          gridOverlay = document.createElement("div");
+          gridOverlay.className = "canvas-grid-overlay";
+          canvas.appendChild(gridOverlay);
+        }
+        return gridOverlay;
+      }
+
+      if (zoomInBtn) {
+        zoomInBtn.addEventListener("click", () => {
+          zoomLevel = Math.min(ZOOM_MAX, zoomLevel + ZOOM_STEP);
+          applyZoom();
+        });
+      }
+
+      if (zoomOutBtn) {
+        zoomOutBtn.addEventListener("click", () => {
+          zoomLevel = Math.max(ZOOM_MIN, zoomLevel - ZOOM_STEP);
+          applyZoom();
+        });
+      }
+
+      if (gridBtn) {
+        gridBtn.addEventListener("click", () => {
+          gridOn = !gridOn;
+          const overlay = ensureGridOverlay();
+          overlay.style.display = gridOn ? "block" : "none";
+
+          if (gridOn) {
+            gridBtn.classList.add("grid-active");
+          } else {
+            gridBtn.classList.remove("grid-active");
+          }
+        });
+      }
 
       // --- HISTORY & ORIGINAL STATE ---
 
@@ -1110,6 +1169,15 @@
         canvas.style.backgroundImage = "";
         updateGradient();
         applyFromControls();
+
+        // also reset zoom + grid
+        zoomLevel = 1;
+        applyZoom();
+        if (gridOverlay) {
+          gridOverlay.style.display = "none";
+        }
+        gridOn = false;
+        if (gridBtn) gridBtn.classList.remove("grid-active");
 
         pushStateToHistory();
       });
