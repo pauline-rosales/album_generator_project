@@ -14,6 +14,22 @@ const CF_API_TOKEN   = process.env.CLOUDFLARE_API_TOKEN;
 const CF_TEXT_MODEL  = process.env.CLOUDFLARE_TEXT_MODEL  || '@cf/meta/llama-3-8b-instruct';
 const CF_IMAGE_MODEL = process.env.CLOUDFLARE_IMAGE_MODEL || '@cf/stabilityai/stable-diffusion-xl-base-1.0';
 
+// Spotify config
+const SPOTIFY_CLIENT_ID     = process.env.SPOTIFY_CLIENT_ID;
+const SPOTIFY_CLIENT_SECRET = process.env.SPOTIFY_CLIENT_SECRET;
+const SPOTIFY_REDIRECT_URI  = process.env.SPOTIFY_REDIRECT_URI;
+const SPOTIFY_SCOPES        = process.env.SPOTIFY_SCOPES;
+
+// Simple in-memory store for dev (single user)
+let spotifyState = {
+  accessToken: null,
+  refreshToken: null,
+  expiresAt: null,
+  playlists: [],
+  firstPlaylistTracks: []
+};
+
+
 // Make sure JSON bodies are parsed for /api/generate
 app.use(express.json({ limit: '2mb' }));
 
@@ -270,6 +286,229 @@ Do NOT include any text, letters, numbers, logos, or captions in the image itsel
     });
   }
 });
+
+// ================= Spotify login =================
+app.get('/api/spotify/login', (req, res) => {
+  if (!SPOTIFY_CLIENT_ID || !SPOTIFY_REDIRECT_URI) {
+    console.error('Missing Spotify env vars');
+    return res.status(500).send('Spotify not configured on server');
+  }
+
+  const params = new URLSearchParams({
+    client_id: SPOTIFY_CLIENT_ID,
+    response_type: 'code',
+    redirect_uri: SPOTIFY_REDIRECT_URI,  // MUST match your .env and Spotify Dashboard
+    scope: SPOTIFY_SCOPES || ''
+  });
+
+  const authUrl = `https://accounts.spotify.com/authorize?${params.toString()}`;
+  console.log('Redirecting to Spotify:', authUrl);
+
+  res.redirect(authUrl);
+});
+
+
+// ================= Spotify callback =================
+app.get('/callback', async (req, res) => {
+  const { code, error } = req.query;
+
+  if (error) {
+    console.error('Spotify returned an error:', error);
+    return res.status(400).send(`Spotify error: ${error}`);
+  }
+
+  if (!code) {
+    return res.status(400).send('Missing "code" from Spotify');
+  }
+
+  if (!SPOTIFY_CLIENT_ID || !SPOTIFY_CLIENT_SECRET || !SPOTIFY_REDIRECT_URI) {
+    console.error('Missing Spotify env vars in callback');
+    return res.status(500).send('Spotify not configured on server');
+  }
+
+  try {
+    // 1) Exchange the code for access + refresh tokens
+    const tokenRes = await fetch('https://accounts.spotify.com/api/token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Authorization':
+          'Basic ' +
+          Buffer.from(
+            `${SPOTIFY_CLIENT_ID}:${SPOTIFY_CLIENT_SECRET}`
+          ).toString('base64')
+      },
+      body: new URLSearchParams({
+        grant_type: 'authorization_code',
+        code,
+        redirect_uri: SPOTIFY_REDIRECT_URI
+      })
+    });
+
+    const tokenData = await tokenRes.json();
+    console.log('Spotify token response:', tokenData);
+
+    if (!tokenRes.ok) {
+      return res
+        .status(500)
+        .send(
+          `Error getting tokens from Spotify: ${
+            tokenData.error_description || 'unknown error'
+          }`
+        );
+    }
+
+    const accessToken  = tokenData.access_token;
+    const refreshToken = tokenData.refresh_token;
+    const expiresIn    = tokenData.expires_in;
+
+    // 2) Use the access token to fetch the user's playlists
+    const playlistsRes = await fetch(
+      'https://api.spotify.com/v1/me/playlists?limit=10',
+      {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`
+        }
+      }
+    );
+
+    const playlistsData = await playlistsRes.json();
+    console.log('Spotify playlists:', playlistsData);
+
+    if (!playlistsRes.ok) {
+      return res
+        .status(500)
+        .send(
+          `Error getting playlists: ${
+            playlistsData.error?.message || 'unknown error'
+          }`
+        );
+    }
+
+    // 3) Get tracks from the first playlist (like you already did)
+    let firstPlaylistTracks = [];
+    if (playlistsData.items && playlistsData.items.length > 0) {
+      const first = playlistsData.items[0];
+      const tracksRes = await fetch(
+        `https://api.spotify.com/v1/playlists/${first.id}/tracks?limit=50`,
+        {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`
+          }
+        }
+      );
+
+      const tracksData = await tracksRes.json();
+      console.log('First playlist tracks:', tracksData);
+
+      if (tracksRes.ok && Array.isArray(tracksData.items)) {
+        firstPlaylistTracks = tracksData.items
+          .map(item => item.track)
+          .filter(Boolean)
+          .map(t => ({
+            name: t.name,
+            artists: t.artists?.map(a => a.name).join(', ') || ''
+          }));
+      }
+    }
+
+    // 4) Save into our in-memory store
+    spotifyState = {
+      accessToken,
+      refreshToken,
+      expiresAt: Date.now() + expiresIn * 1000,
+      playlists: playlistsData.items || [],
+      firstPlaylistTracks
+    };
+
+    // 5) Redirect back to your Generate page
+    res.redirect('/generate');
+  } catch (err) {
+    console.error('Spotify callback error:', err);
+    res
+      .status(500)
+      .send(
+        'Internal server error talking to Spotify: ' +
+          (err.message || String(err))
+      );
+  }
+});
+
+// Let the frontend read the stored Spotify data
+app.get('/api/spotify/state', (req, res) => {
+  if (!spotifyState.accessToken) {
+    return res.status(404).json({
+      ok: false,
+      error: 'No Spotify data stored yet. Connect first.'
+    });
+  }
+
+  res.json({
+    ok: true,
+    playlists: spotifyState.playlists,
+    firstPlaylistTracks: spotifyState.firstPlaylistTracks
+  });
+});
+
+// Return tracks for a given playlist id
+app.get('/api/spotify/playlist/:id/tracks', async (req, res) => {
+  const playlistId = req.params.id;
+
+  if (!spotifyState.accessToken) {
+    return res.status(401).json({
+      ok: false,
+      error: 'Not connected to Spotify yet.'
+    });
+  }
+
+  if (!playlistId) {
+    return res.status(400).json({
+      ok: false,
+      error: 'Missing playlist id.'
+    });
+  }
+
+  try {
+    const tracksRes = await fetch(
+      `https://api.spotify.com/v1/playlists/${playlistId}/tracks?limit=50`,
+      {
+        headers: {
+          Authorization: `Bearer ${spotifyState.accessToken}`
+        }
+      }
+    );
+
+    const tracksData = await tracksRes.json();
+    console.log('Tracks for playlist', playlistId, tracksData);
+
+    if (!tracksRes.ok) {
+      return res.status(500).json({
+        ok: false,
+        error: tracksData.error?.message || 'Error fetching playlist tracks'
+      });
+    }
+
+    const tracks = (tracksData.items || [])
+      .map(item => item.track)
+      .filter(Boolean)
+      .map(t => ({
+        name: t.name,
+        artists: t.artists?.map(a => a.name).join(', ') || ''
+      }));
+
+    res.json({
+      ok: true,
+      tracks
+    });
+  } catch (err) {
+    console.error('Error in /api/spotify/playlist/:id/tracks:', err);
+    res.status(500).json({
+      ok: false,
+      error: err.message || String(err)
+    });
+  }
+});
+
 
 //404 fallback send Home
 app.use((_, res) => res.status(404).sendFile(path.join(PUBLIC_DIR, 'index.html')));
