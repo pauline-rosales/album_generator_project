@@ -298,8 +298,10 @@ app.get('/api/spotify/login', (req, res) => {
     client_id: SPOTIFY_CLIENT_ID,
     response_type: 'code',
     redirect_uri: SPOTIFY_REDIRECT_URI,  // MUST match your .env and Spotify Dashboard
-    scope: SPOTIFY_SCOPES || ''
+    scope: SPOTIFY_SCOPES || '',
+    show_dialog: 'true'   // 🔹 force Spotify to show login/consent every time
   });
+
 
   const authUrl = `https://accounts.spotify.com/authorize?${params.toString()}`;
   console.log('Redirecting to Spotify:', authUrl);
@@ -437,18 +439,22 @@ app.get('/callback', async (req, res) => {
 // Let the frontend read the stored Spotify data
 app.get('/api/spotify/state', (req, res) => {
   if (!spotifyState.accessToken) {
-    return res.status(404).json({
+    // Logged OUT
+    return res.json({
       ok: false,
-      error: 'No Spotify data stored yet. Connect first.'
+      playlists: [],
+      firstPlaylistTracks: []
     });
   }
 
+  // Logged IN
   res.json({
     ok: true,
     playlists: spotifyState.playlists,
     firstPlaylistTracks: spotifyState.firstPlaylistTracks
   });
 });
+
 
 // Return tracks for a given playlist id
 app.get('/api/spotify/playlist/:id/tracks', async (req, res) => {
@@ -508,6 +514,34 @@ app.get('/api/spotify/playlist/:id/tracks', async (req, res) => {
     });
   }
 });
+
+// LOG OUT OF SPOTIFY (app-level logout)
+app.get("/api/spotify/logout", (req, res) => {
+  try {
+    // 🔹 Clear the in-memory state that your app actually uses
+    spotifyState = {
+      accessToken: null,
+      refreshToken: null,
+      expiresAt: null,
+      playlists: [],
+      firstPlaylistTracks: []
+    };
+
+    // clear cookies if added
+    res.clearCookie("spotify_access_token");
+    res.clearCookie("spotify_refresh_token");
+
+    console.log("User logged out of Spotify (app state cleared).");
+
+    return res.json({ ok: true });
+  } catch (err) {
+    console.error("Error logging out:", err);
+    return res.json({ ok: false, error: err.message || String(err) });
+  }
+});
+
+
+
 
 
 //404 fallback send Home

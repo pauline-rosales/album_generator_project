@@ -280,3 +280,23 @@ body{
 .sticker-instance:active {
   cursor: grabbing;
 }
+
+/* --- Playlist select styling --- */
+#playlistSelect,
+#playlistSelect option {
+  color: #000;             /* black text */
+  background-color: #fff;  /* white background */
+}
+
+/* Optional: limit dropdown height so it scrolls if there are many playlists */
+#playlistSelect {
+  max-height: 260px;
+  overflow-y: auto;
+}
+/* --- Universal dropdown styling --- */
+select,
+select option {
+  color: #000 !important;              /* black text */
+  background-color: #fff !important;   /* white background */
+}
+

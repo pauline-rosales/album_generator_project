@@ -33,14 +33,13 @@
           Connect Spotify
         </a>
       </div>
-      
 
       <div class="control-group" style="margin-top:10px">
         <label class="control-label">Choose a Playlist</label>
         <select id="playlistSelect" class="dropdown">
           <option value="">— Select —</option>
         </select>
-      </div>    
+      </div>
 
       <div class="playlist-info">
         <div class="playlist-title">Late Night Vibes</div>
@@ -113,6 +112,12 @@
       <div class="action-buttons">
         <button class="primary-btn apply-btn">Apply Changes</button>
         <button class="primary-btn download-btn">Download Cover</button>
+       <button id="shareBtn" class="primary-btn">
+  Share Cover
+</button>
+
+</button>
+
       </div>
     </aside>
   </div>
@@ -123,427 +128,615 @@
   <script src="/assets/app.js"></script>
 
   <!-- PAGE-SPECIFIC SCRIPT -->
-  <script>
-    document.addEventListener("DOMContentLoaded", () => {
-      const cards          = Array.from(document.querySelectorAll(".cover-card"));
-      const titleInput     = document.querySelector(".text-input");
-      const fontSelect     = document.querySelector(".right-panel .dropdown");
-      const swatches       = Array.from(document.querySelectorAll(".color-swatch"));
-      const regenBtn       = document.querySelector(".regenerate-btn");
-      const playlistSelect = document.getElementById("playlistSelect");
-      const moodEl         = document.getElementById("playlistMood");
-      const applyBtn       = document.querySelector(".apply-btn");
-      const toastEl        = document.getElementById("toast");
-      const spotifyBtn     = document.getElementById("spotifyConnectBtn");
-      const songListEl     = document.getElementById("songList");
+ <script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const cards          = Array.from(document.querySelectorAll(".cover-card"));
+    const titleInput     = document.querySelector(".text-input");
+    const fontSelect     = document.querySelector(".right-panel .dropdown");
+    const swatches       = Array.from(document.querySelectorAll(".color-swatch"));
+    const regenBtn       = document.querySelector(".regenerate-btn");
+    const playlistSelect = document.getElementById("playlistSelect");
+    const moodEl         = document.getElementById("playlistMood");
+    const applyBtn       = document.querySelector(".apply-btn");
+    const toastEl        = document.getElementById("toast");
+    const spotifyBtn     = document.getElementById("spotifyConnectBtn");
+    // --- Spotify button state + logout handler ---
+    async function handleSpotifyLogout(e) {
+      e.preventDefault();
 
-      // store Spotify playlists so we can reference them later
-      let spotifyPlaylists = [];
+      try {
+        const res  = await fetch("/api/spotify/logout");
+        const data = await res.json();
 
-      function mapUiFont(name) {
-        switch ((name || "").toLowerCase()) {
-          case "classic serif":  return "Georgia, 'Times New Roman', serif";
-          case "bold display":   return "'Impact','Haettenschweiler','Arial Black',sans-serif";
-          case "elegant script": return "'Brush Script MT',cursive,'Segoe Script'";
-          default:               return "Inter,'Segoe UI',sans-serif";
+        if (!data.ok) {
+          console.error("Logout failed:", data.error);
+        }
+      } catch (err) {
+        console.error("Logout request error:", err);
+      }
+
+      // Clear any local UI / cache
+      if (songListEl) songListEl.innerHTML = "";
+      const plTitleEl = document.querySelector(".playlist-title");
+      const plMetaEl  = document.querySelector(".playlist-meta");
+      if (plTitleEl) plTitleEl.textContent = "No playlist selected";
+      if (plMetaEl)  plMetaEl.textContent  = "";
+      if (moodEl)    moodEl.textContent    = "";
+
+      // Forget any cached AI images if you want
+      try {
+        localStorage.removeItem("ai_album_last_images");
+      } catch (e) {
+        console.warn("localStorage remove failed:", e);
+      }
+
+      // Update button back to "Connect Spotify"
+      updateSpotifyButtonState();
+    }
+
+    async function updateSpotifyButtonState() {
+      if (!spotifyBtn) return;
+
+      try {
+        const res  = await fetch("/api/spotify/state");
+        const data = await res.json();
+
+        const loggedIn = data.ok && data.playlists && data.playlists.length > 0;
+
+        if (loggedIn) {
+          spotifyBtn.textContent = "Logout of Spotify";
+          spotifyBtn.href = "#";
+          spotifyBtn.onclick = handleSpotifyLogout;
+        } else {
+          spotifyBtn.textContent = "Connect Spotify";
+          spotifyBtn.href = "/api/spotify/login";
+          spotifyBtn.onclick = null;
+        }
+      } catch (err) {
+        console.error("Spotify state check failed:", err);
+        // On error, fall back to "Connect"
+        spotifyBtn.textContent = "Connect Spotify";
+        spotifyBtn.href = "/api/spotify/login";
+        spotifyBtn.onclick = null;
+      }
+    }
+
+    
+    const songListEl     = document.getElementById("songList");
+    const shareBtn       = document.getElementById("shareBtn");
+    const downloadBtn    = document.querySelector(".download-btn");
+
+    let spotifyPlaylists = [];
+    // --- Spotify button state + logout handler ---
+    async function handleSpotifyLogout(e) {
+      e.preventDefault();
+
+      try {
+        const res  = await fetch("/api/spotify/logout");
+        const data = await res.json();
+        if (!data.ok) {
+          console.error("Logout failed:", data.error);
+        }
+      } catch (err) {
+        console.error("Logout request error:", err);
+      }
+
+      // Clear playlist UI
+      if (songListEl) songListEl.innerHTML = "";
+
+      const plTitleEl = document.querySelector(".playlist-title");
+      const plMetaEl  = document.querySelector(".playlist-meta");
+
+      if (plTitleEl) plTitleEl.textContent = "No playlist selected";
+      if (plMetaEl)  plMetaEl.textContent  = "";
+      if (moodEl)    moodEl.textContent    = "";
+
+      // Optionally forget cached images
+      try {
+        localStorage.removeItem("ai_album_last_images");
+      } catch (e) {
+        console.warn("localStorage remove failed:", e);
+      }
+
+      // Flip button back to "Connect Spotify"
+      updateSpotifyButtonState();
+    }
+
+    async function updateSpotifyButtonState() {
+      if (!spotifyBtn) return;
+
+      try {
+        const res  = await fetch("/api/spotify/state");
+        const data = await res.json();
+
+        const loggedIn = data.ok && data.playlists && data.playlists.length > 0;
+
+        if (loggedIn) {
+          // USER IS LOGGED IN
+          spotifyBtn.textContent = "Logout of Spotify";
+          spotifyBtn.href = "#";
+          spotifyBtn.onclick = handleSpotifyLogout;
+        } else {
+          // USER IS LOGGED OUT
+          spotifyBtn.textContent = "Connect Spotify";
+          spotifyBtn.href = "/api/spotify/login";
+          spotifyBtn.onclick = null;
+        }
+      } catch (err) {
+        console.error("Spotify state check failed:", err);
+        // Fallback: treat as logged out
+        spotifyBtn.textContent = "Connect Spotify";
+        spotifyBtn.href = "/api/spotify/login";
+        spotifyBtn.onclick = null;
+      }
+    }
+
+    
+    
+
+    function mapUiFont(name) {
+      switch ((name || "").toLowerCase()) {
+        case "classic serif":  return "Georgia, 'Times New Roman', serif";
+        case "bold display":   return "'Impact','Haettenschweiler','Arial Black',sans-serif";
+        case "elegant script": return "'Brush Script MT',cursive,'Segoe Script'";
+        default:               return "Inter,'Segoe UI',sans-serif";
+      }
+    }
+
+    function getSelectedCard() {
+      return document.querySelector(".cover-card.selected");
+    }
+
+    function getSelectedPreview() {
+      const card = getSelectedCard();
+      return card ? card.querySelector(".cover-preview") : null;
+    }
+
+    function applyToCard(card) {
+      if (!card) return;
+      const preview = card.querySelector(".cover-preview");
+      if (!preview) return;
+
+      const title  = (titleInput.value || "").trim() || "";
+      const fontUi = fontSelect.value;
+      const swatch = document.querySelector(".color-swatch.selected");
+
+      preview.textContent = title;
+      preview.style.fontFamily = mapUiFont(fontUi);
+
+      const hasAiImage =
+        preview.style.backgroundImage &&
+        preview.style.backgroundImage !== "none";
+
+      if (swatch) {
+        const color = getComputedStyle(swatch).backgroundColor;
+
+        if (!hasAiImage) {
+          preview.style.backgroundImage = "none";
+          preview.style.backgroundColor = color;
+          preview.style.color = "#1a1d2e";
         }
       }
+    }
 
-      function getSelectedCard() {
-        return document.querySelector(".cover-card.selected");
-      }
-
-      // Apply current controls to a card preview
-      function applyToCard(card) {
-        if (!card) return;
-        const preview = card.querySelector(".cover-preview");
-        if (!preview) return;
-
-        const title  = (titleInput.value || "").trim() || "";
-        const fontUi = fontSelect.value;
-        const swatch = document.querySelector(".color-swatch.selected");
-
-        preview.textContent = title;
-        preview.style.fontFamily = mapUiFont(fontUi);
-
-        const hasAiImage =
-          preview.style.backgroundImage &&
-          preview.style.backgroundImage !== "none";
-
-        if (swatch) {
-          const color = getComputedStyle(swatch).backgroundColor;
-
-          // If there is NO AI image yet, let palette control background
-          if (!hasAiImage) {
-            preview.style.backgroundImage = "none";
-            preview.style.backgroundColor = color;
-            preview.style.color = "#1a1d2e";
-          }
-
-          // Border color is now handled ONLY by CSS (.cover-card.selected),
-          // so we don't touch card.style.borderColor here.
-        }
-      }
-
-      // Sync button labels with current selected card
-      function syncCardButtons() {
-        cards.forEach(card => {
-          const btn = card.querySelector(".select-btn");
-          if (!btn) return;
-
-          if (card.classList.contains("selected")) {
-            btn.textContent = "Selected";
-          } else {
-            btn.textContent = "Select This";
-          }
-        });
-      }
-
-      // Initial sync (first card starts selected)
-      syncCardButtons();
-
-      // Card selection: highlight + button text change
+    function syncCardButtons() {
       cards.forEach(card => {
         const btn = card.querySelector(".select-btn");
         if (!btn) return;
 
-        btn.addEventListener("click", () => {
-          cards.forEach(c => c.classList.remove("selected"));
-          card.classList.add("selected");
-          syncCardButtons();
-          applyToCard(card);
-        });
+        if (card.classList.contains("selected")) {
+          btn.textContent = "Selected";
+        } else {
+          btn.textContent = "Select This";
+        }
       });
+    }
 
-      // Title / font changes
-      titleInput.addEventListener("input", () => applyToCard(getSelectedCard()));
-      fontSelect.addEventListener("change", () => applyToCard(getSelectedCard()));
+    syncCardButtons();
 
-      // Color swatch click
-      swatches.forEach(sw => {
-        sw.addEventListener("click", () => {
-          swatches.forEach(s => s.classList.remove("selected"));
-          sw.classList.add("selected");
-          applyToCard(getSelectedCard());
-        });
+    cards.forEach(card => {
+      const btn = card.querySelector(".select-btn");
+      if (!btn) return;
+
+      btn.addEventListener("click", () => {
+        cards.forEach(c => c.classList.remove("selected"));
+        card.classList.add("selected");
+        syncCardButtons();
+        applyToCard(card);
       });
+    });
 
-      // Helper: get songs list
-      function getCurrentSongs() {
-        return Array.from(document.querySelectorAll("#songList .song-item"))
-          .map(el => el.textContent.trim())
-          .filter(Boolean);
-      }
+    titleInput.addEventListener("input", () => applyToCard(getSelectedCard()));
+    fontSelect.addEventListener("change", () => applyToCard(getSelectedCard()));
 
-      // NEW: render song list into the left panel
-      function renderSongList(tracks) {
-        if (!songListEl) return;
-        songListEl.innerHTML = "";
+    swatches.forEach(sw => {
+      sw.addEventListener("click", () => {
+        swatches.forEach(s => s.classList.remove("selected"));
+        sw.classList.add("selected");
+        applyToCard(getSelectedCard());
+      });
+    });
 
-        (tracks || []).forEach(t => {
-          const div = document.createElement("div");
-          div.className = "song-item";
+    function getCurrentSongs() {
+      return Array.from(document.querySelectorAll("#songList .song-item"))
+        .map(el => el.textContent.trim())
+        .filter(Boolean);
+    }
 
-          if (typeof t === "string") {
-            div.textContent = t;
-          } else {
-            // Spotify format: { name, artists }
-            const name    = t.name || "";
-            const artists = t.artists || "";
-            div.textContent = artists ? `${name} — ${artists}` : name;
+    function renderSongList(tracks) {
+      if (!songListEl) return;
+      songListEl.innerHTML = "";
+
+      (tracks || []).forEach(t => {
+        const div = document.createElement("div");
+        div.className = "song-item";
+
+        if (typeof t === "string") {
+          div.textContent = t;
+        } else {
+          const name    = t.name || "";
+          const artists = t.artists || "";
+          div.textContent = artists ? `${name} — ${artists}` : name;
+        }
+
+        songListEl.appendChild(div);
+      });
+    }
+
+    async function loadSpotifyState() {
+      try {
+        const res = await fetch("/api/spotify/state");
+        if (!res.ok) {
+          console.log("No Spotify data yet (status:", res.status, ")");
+          return;
+        }
+
+        const data = await res.json();
+        if (!data.ok) {
+          console.log("Spotify state reported error:", data.error);
+          return;
+        }
+
+        const playlists = data.playlists || [];
+        const tracks    = data.firstPlaylistTracks || [];
+
+        spotifyPlaylists = playlists;
+
+        if (playlists.length > 0) {
+          const first       = playlists[0];
+          const plTitleEl   = document.querySelector(".playlist-title");
+          const plMetaEl    = document.querySelector(".playlist-meta");
+
+          if (playlistSelect) {
+            playlistSelect.innerHTML = "";
+
+            const placeholder = document.createElement("option");
+            placeholder.value = "";
+            placeholder.textContent = "— Select a playlist —";
+            playlistSelect.appendChild(placeholder);
+
+            playlists.forEach(pl => {
+              const opt = document.createElement("option");
+              opt.value = pl.id;
+              opt.textContent = pl.name;
+              playlistSelect.appendChild(opt);
+            });
+
+            playlistSelect.value = first.id;
           }
 
-          songListEl.appendChild(div);
-        });
-      }
+          if (plTitleEl) plTitleEl.textContent = first.name || "Playlist";
+          if (plMetaEl) {
+            const total = first.tracks && typeof first.tracks.total === "number"
+              ? first.tracks.total
+              : (tracks.length || 0);
+            plMetaEl.textContent = `${total} songs`;
+          }
 
-      // NEW: Try to load Spotify state from the backend
-      async function loadSpotifyState() {
+          if (titleInput && first.name) {
+            titleInput.value = first.name;
+            applyToCard(getSelectedCard());
+          }
+        }
+
+        if (tracks.length > 0) {
+          renderSongList(tracks);
+        }
+
+        if (moodEl) {
+          moodEl.textContent = "Spotify connected ✓";
+        }
+
+      } catch (err) {
+        console.error("Error loading Spotify state:", err);
+      }
+    }
+
+    if (playlistSelect) {
+      playlistSelect.addEventListener("change", async () => {
+        const selectedId = playlistSelect.value;
+
+        if (!selectedId) {
+          renderSongList([]);
+          return;
+        }
+
+        const pl = spotifyPlaylists.find(p => p.id === selectedId);
+
+        if (pl) {
+          const plTitleEl = document.querySelector(".playlist-title");
+          const plMetaEl  = document.querySelector(".playlist-meta");
+
+          if (plTitleEl) plTitleEl.textContent = pl.name || "Playlist";
+          if (plMetaEl) {
+            const total = pl.tracks && typeof pl.tracks.total === "number"
+              ? pl.tracks.total
+              : "";
+            plMetaEl.textContent = total ? `${total} songs` : "";
+          }
+
+          if (titleInput && pl.name) {
+            titleInput.value = pl.name;
+            applyToCard(getSelectedCard());
+          }
+        }
+
         try {
-          const res = await fetch("/api/spotify/state");
+          const res = await fetch(`/api/spotify/playlist/${encodeURIComponent(selectedId)}/tracks`);
           if (!res.ok) {
-            console.log("No Spotify data yet (status:", res.status, ")");
+            console.error("Error fetching playlist tracks:", res.status);
             return;
           }
 
           const data = await res.json();
           if (!data.ok) {
-            console.log("Spotify state reported error:", data.error);
+            console.error("Playlist tracks error:", data.error);
             return;
           }
 
-          const playlists = data.playlists || [];
-          const tracks    = data.firstPlaylistTracks || [];
-
-          // Save playlists for later (for dropdown change, generateAI, etc.)
-          spotifyPlaylists = playlists;
-
-          // Update UI with first playlist info (if any)
-          if (playlists.length > 0) {
-            const first       = playlists[0];
-            const plTitleEl   = document.querySelector(".playlist-title");
-            const plMetaEl    = document.querySelector(".playlist-meta");
-
-            // Populate the dropdown with real Spotify playlists
-            if (playlistSelect) {
-              // Clear existing options
-              playlistSelect.innerHTML = "";
-
-              // Placeholder
-              const placeholder = document.createElement("option");
-              placeholder.value = "";
-              placeholder.textContent = "— Select a playlist —";
-              playlistSelect.appendChild(placeholder);
-
-              // Real playlists
-              playlists.forEach(pl => {
-                const opt = document.createElement("option");
-                opt.value = pl.id;          // use id for API
-                opt.textContent = pl.name;  // visible text
-                playlistSelect.appendChild(opt);
-              });
-
-              // Auto-select the first playlist
-              playlistSelect.value = first.id;
-            }
-
-            if (plTitleEl) plTitleEl.textContent = first.name || "Playlist";
-            if (plMetaEl) {
-              const total = first.tracks && typeof first.tracks.total === "number"
-                ? first.tracks.total
-                : (tracks.length || 0);
-              plMetaEl.textContent = `${total} songs`;
-            }
-
-            // Also update the title input so covers use playlist name
-            if (titleInput && first.name) {
-              titleInput.value = first.name;
-              applyToCard(getSelectedCard());
-            }
-          }
-
-          // Fill the songs list from Spotify (for the first playlist)
-          if (tracks.length > 0) {
-            renderSongList(tracks);
-          }
-
-          if (moodEl) {
-            moodEl.textContent = "Spotify connected ✓";
-          }
-
+          renderSongList(data.tracks || []);
         } catch (err) {
-          console.error("Error loading Spotify state:", err);
+          console.error("Error in playlist change handler:", err);
         }
+      });
+    }
+
+    let toastTimeoutId = null;
+    function showToast(message) {
+      if (!toastEl) return;
+      toastEl.textContent = message;
+      toastEl.classList.add("show");
+
+      if (toastTimeoutId) {
+        clearTimeout(toastTimeoutId);
       }
+      toastTimeoutId = setTimeout(() => {
+        toastEl.classList.remove("show");
+      }, 2000);
+    }
 
-      // When user changes playlist from dropdown, fetch that playlist's tracks
-      if (playlistSelect) {
-        playlistSelect.addEventListener("change", async () => {
-          const selectedId = playlistSelect.value;
-
-          if (!selectedId) {
-            renderSongList([]);
-            return;
-          }
-
-          // Find the selected playlist object
-          const pl = spotifyPlaylists.find(p => p.id === selectedId);
-
-          if (pl) {
-            const plTitleEl = document.querySelector(".playlist-title");
-            const plMetaEl  = document.querySelector(".playlist-meta");
-
-            if (plTitleEl) plTitleEl.textContent = pl.name || "Playlist";
-            if (plMetaEl) {
-              const total = pl.tracks && typeof pl.tracks.total === "number"
-                ? pl.tracks.total
-                : "";
-              plMetaEl.textContent = total ? `${total} songs` : "";
-            }
-
-            if (titleInput && pl.name) {
-              titleInput.value = pl.name;
-              applyToCard(getSelectedCard());
-            }
-          }
-
-          // Fetch tracks from backend for that playlist id
-          try {
-            const res = await fetch(`/api/spotify/playlist/${encodeURIComponent(selectedId)}/tracks`);
-            if (!res.ok) {
-              console.error("Error fetching playlist tracks:", res.status);
-              return;
-            }
-
-            const data = await res.json();
-            if (!data.ok) {
-              console.error("Playlist tracks error:", data.error);
-              return;
-            }
-
-            renderSongList(data.tracks || []);
-          } catch (err) {
-            console.error("Error in playlist change handler:", err);
-          }
-        });
-      }
-
-      // Small toast helper
-      let toastTimeoutId = null;
-      function showToast(message) {
-        if (!toastEl) return;
-        toastEl.textContent = message;
-        toastEl.classList.add("show");
-
-        if (toastTimeoutId) {
-          clearTimeout(toastTimeoutId);
-        }
-        toastTimeoutId = setTimeout(() => {
-          toastEl.classList.remove("show");
-        }, 2000);
-      }
-
-      // Apply Changes handler: save selected cover config for Customize page
-      if (applyBtn) {
-        applyBtn.addEventListener("click", () => {
-          const selected = getSelectedCard();
-          if (!selected) return;
-
-          const preview = selected.querySelector(".cover-preview");
-          if (!preview) return;
-
-          const swatch = document.querySelector(".color-swatch.selected");
-          const color  = swatch ? getComputedStyle(swatch).backgroundColor : null;
-
-          // Decide if there's actually an AI image applied
-          const rawBg = preview.style.backgroundImage;
-          const hasRealImage =
-            rawBg &&
-            rawBg !== "none" &&
-            !rawBg.startsWith("linear-gradient"); // just in case
-
-          const payload = {
-            title: (titleInput?.value || "").trim(),
-            font:  fontSelect?.value || "Modern Sans",
-            color,
-            backgroundImage: hasRealImage ? rawBg : null
-          };
-
-          const payloadStr = JSON.stringify(payload);
-          let saved = false;
-
-          // Try localStorage first, then fall back to sessionStorage
-          try {
-            window.localStorage.setItem("selected_cover_config", payloadStr);
-            saved = true;
-          } catch (e) {
-            console.warn("localStorage failed, trying sessionStorage:", e);
-            try {
-              window.sessionStorage.setItem("selected_cover_config", payloadStr);
-              saved = true;
-            } catch (e2) {
-              console.error("sessionStorage also failed:", e2);
-            }
-          }
-
-          if (saved) {
-            showToast("Changes applied – opening Customize ✨");
-          } else {
-            showToast("Couldn't save locally, but we'll still open Customize 👉");
-          }
-
-          setTimeout(() => {
-            window.location.href = "/customize";
-          }, 600);
-        });
-      }
-
-      // generate call backend 
-      async function generateAI() {
+    if (applyBtn) {
+      applyBtn.addEventListener("click", () => {
         const selected = getSelectedCard();
         if (!selected) return;
 
-        const originalLabel = regenBtn.textContent;
-        regenBtn.disabled = true;
-        regenBtn.textContent = "Generating...";
+        const preview = selected.querySelector(".cover-preview");
+        if (!preview) return;
 
-        // Default title = whatever is in the input
-        let title = (titleInput.value || "").trim();
-        let subtitle = "";
+        const swatch = document.querySelector(".color-swatch.selected");
+        const color  = swatch ? getComputedStyle(swatch).backgroundColor : null;
 
-        // If a Spotify playlist is chosen, override title from that playlist
-        if (playlistSelect && playlistSelect.value) {
-          const selectedId = playlistSelect.value;
-          const pl = spotifyPlaylists.find(p => p.id === selectedId);
-          if (pl) {
-            title = pl.name || title;
-          }
-        }
+        const rawBg = preview.style.backgroundImage;
+        const hasRealImage =
+          rawBg &&
+          rawBg !== "none" &&
+          !rawBg.startsWith("linear-gradient");
 
-        const songs = getCurrentSongs();
+        const payload = {
+          title: (titleInput?.value || "").trim(),
+          font:  fontSelect?.value || "Modern Sans",
+          color,
+          backgroundImage: hasRealImage ? rawBg : null
+        };
+
+        const payloadStr = JSON.stringify(payload);
+        let saved = false;
 
         try {
-          const res = await fetch("/api/generate", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ title, subtitle, songs })
-          });
-
-          if (!res.ok) {
-            const txt = await res.text();
-            console.error("Backend error:", txt);
-            throw new Error("Bad /api/generate response");
+          window.localStorage.setItem("selected_cover_config", payloadStr);
+          saved = true;
+        } catch (e) {
+          console.warn("localStorage failed, trying sessionStorage:", e);
+          try {
+            window.sessionStorage.setItem("selected_cover_config", payloadStr);
+            saved = true;
+          } catch (e2) {
+            console.error("sessionStorage also failed:", e2);
           }
+        }
 
-          const data   = await res.json();
-          const images = data.images || [];
-          const mood   = data.mood;
-          const top10  = data.top10 || [];
+        if (saved) {
+          showToast("Changes applied – opening Customize ✨");
+        } else {
+          showToast("Couldn't save locally, but we'll still open Customize 👉");
+        }
 
-          if (moodEl && mood) {
-            moodEl.textContent = `Detected mood: ${mood}`;
-          }
-          console.log("Top 10 vibe songs:", top10);
+        setTimeout(() => {
+          window.location.href = "/customize";
+        }, 600);
+      });
+    }
 
-          // Optionally still store first image for other use
-          if (images[0]) {
-            localStorage.setItem("ai_album_image", images[0]);
-          }
+    async function generateAI() {
+      const selected = getSelectedCard();
+      if (!selected) return;
 
-          // Apply images to cards
-          images.forEach((url, i) => {
-            const card = cards[i];
-            if (!card) return;
-            const preview = card.querySelector(".cover-preview");
-            if (!preview) return;
+      const originalLabel = regenBtn.textContent;
+      regenBtn.disabled = true;
+      regenBtn.textContent = "Generating...";
 
-            preview.style.backgroundImage    = `url(${url})`;
-            preview.style.backgroundSize     = "cover";
-            preview.style.backgroundPosition = "center";
-            preview.style.backgroundRepeat   = "no-repeat";
-            preview.style.backgroundColor    = "#000";
+      let title = (titleInput.value || "").trim();
+      let subtitle = "";
 
-            // Re-apply text / font (border is CSS-controlled)
-            applyToCard(card);
-          });
-        } catch (err) {
-          console.error(err);
-          alert("Error generating AI covers (check terminal).");
-        } finally {
-          regenBtn.disabled = false;
-          regenBtn.textContent = originalLabel;
+      if (playlistSelect && playlistSelect.value) {
+        const selectedId = playlistSelect.value;
+        const pl = spotifyPlaylists.find(p => p.id === selectedId);
+        if (pl) {
+          title = pl.name || title;
         }
       }
 
-      if (regenBtn) {
-        regenBtn.addEventListener("click", generateAI);
+      const songs = getCurrentSongs();
+
+      try {
+        const res = await fetch("/api/generate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ title, subtitle, songs })
+        });
+
+        if (!res.ok) {
+          const txt = await res.text();
+          console.error("Backend error:", txt);
+          throw new Error("Bad /api/generate response");
+        }
+
+        const data   = await res.json();
+        const images = data.images || [];
+        const mood   = data.mood;
+        const top10  = data.top10 || [];
+
+        if (moodEl && mood) {
+          moodEl.textContent = `Detected mood: ${mood}`;
+        }
+        console.log("Top 10 vibe songs:", top10);
+
+        if (images[0]) {
+          localStorage.setItem("ai_album_image", images[0]);
+        }
+
+        images.forEach((url, i) => {
+          const card = cards[i];
+          if (!card) return;
+          const preview = card.querySelector(".cover-preview");
+          if (!preview) return;
+
+          preview.style.backgroundImage    = `url(${url})`;
+          preview.style.backgroundSize     = "cover";
+          preview.style.backgroundPosition = "center";
+          preview.style.backgroundRepeat   = "no-repeat";
+          preview.style.backgroundColor    = "#000";
+
+          applyToCard(card);
+        });
+      } catch (err) {
+        console.error(err);
+        alert("Error generating AI covers (check terminal).");
+      } finally {
+        regenBtn.disabled = false;
+        regenBtn.textContent = originalLabel;
       }
+    }
 
-      // Try to hydrate from Spotify if the user just logged in
-      loadSpotifyState();
-    });
-  </script>
+    if (regenBtn) {
+      regenBtn.addEventListener("click", generateAI);
+    }
 
+    // ====== helpers for download + share ======
+    function extractBackgroundUrl(bg) {
+      if (!bg || bg === "none") return null;
+      const match = bg.match(/url\(["']?(.*?)["']?\)/);
+      return match ? match[1] : null;
+    }
 
+    function getFileBaseTitle() {
+      const t = (titleInput?.value || "playlist").trim() || "playlist";
+      const slugFn = window.slug || function (s) {
+        return String(s)
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/^-+|-+$/g, "");
+      };
+      return slugFn(t);
+    }
+
+    // ✅ Download selected cover
+    if (downloadBtn) {
+      downloadBtn.addEventListener("click", async () => {
+        const preview = getSelectedPreview();
+        if (!preview) {
+          alert("Select a cover first.");
+          return;
+        }
+
+        const bg = preview.style.backgroundImage;
+        const url = extractBackgroundUrl(bg);
+        if (!url) {
+          alert("Generate a cover first before downloading.");
+          return;
+        }
+
+        const fileName = `cover_${getFileBaseTitle()}.png`;
+
+        // if it's a data URL we can just use it directly
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = fileName;
+        a.click();
+      });
+    }
+
+    // ✅ Share selected cover (or fall back to download)
+    if (shareBtn) {
+      shareBtn.addEventListener("click", async () => {
+        const preview = getSelectedPreview();
+        if (!preview) {
+          alert("Select a cover first.");
+          return;
+        }
+
+        const bg = preview.style.backgroundImage;
+        const url = extractBackgroundUrl(bg);
+        if (!url) {
+          alert("Generate a cover first before sharing.");
+          return;
+        }
+
+        const fileName = `cover_${getFileBaseTitle()}.png`;
+
+        try {
+          const res = await fetch(url);
+          const blob = await res.blob();
+          const file = new File([blob], fileName, { type: "image/png" });
+
+          if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            await navigator.share({
+              title: titleInput?.value || "Playlist cover",
+              files: [file]
+            });
+          } else {
+            // Fallback: just download + message
+            const a = document.createElement("a");
+            const dlUrl = URL.createObjectURL(blob);
+            a.href = dlUrl;
+            a.download = fileName;
+            a.click();
+            URL.revokeObjectURL(dlUrl);
+            alert("Sharing isn't fully supported here, so the cover was downloaded instead.");
+          }
+        } catch (err) {
+          console.error("Share error:", err);
+          alert("Could not share this cover on this browser.");
+        }
+      });
+    }
+
+    loadSpotifyState();
+    updateSpotifyButtonState();
+
+  });
+</script>
+
+  
 </body>
 </html>
