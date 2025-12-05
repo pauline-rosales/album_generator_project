@@ -1053,7 +1053,7 @@ let lastBgEnd   = bgEnd.value;
 
       function applyFromControls() {
         // Title + subtitle text
-        const titleVal = (titleInput.value || "").trim() || "Untitled Playlist";
+        const titleVal = (titleInput.value || "").trim();
         canvasTitle.textContent = titleVal;
         canvasSub.textContent   = (subInput.value || "").trim();
 
