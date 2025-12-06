@@ -25,18 +25,18 @@
 
     /* Navigation Bar */
     .navbar {
-    background: #22263a;
-    height: 70px;
-    display: flex;
-    align-items: center;
-    padding: 0 40px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    z-index: 100;
-  }
+      background: #22263a;
+      height: 70px;
+      display: flex;
+      align-items: center;
+      padding: 0 40px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+    }
 
     .logo {
       font-size: 1.3em;
@@ -249,16 +249,16 @@
     }
 
     .canvas-area {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: rgba(0, 0, 0, 0.2);
-    border-radius: 16px;
-    padding: 40px;
-    min-height: 400px;
-    overflow: hidden; /* so zoom crops the edges instead of spilling */
-   }
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 16px;
+      padding: 40px;
+      min-height: 400px;
+      overflow: hidden; /* so zoom crops the edges instead of spilling */
+    }
 
     .cover-canvas {
       width: 100%;
@@ -292,7 +292,6 @@
       font-size: 14px;
       opacity: 0.9;
     }
-
 
     /* Light effect overlay */
     .light-effect-overlay {
@@ -795,7 +794,7 @@
         <div id="stickerList" class="sticker-list">
           <!-- Filled by JS -->
         </div>
-         <button
+        <button
           id="deleteStickerBtn"
           class="action-bar-btn secondary-action"
           style="margin-top: 8px; width: 100%;"
@@ -805,8 +804,6 @@
         <p style="margin-top: 6px; font-size: 11px; color: #8b92b0; opacity: 0.8;">
           Emojis by OpenMoji · CC&nbsp;BY-SA&nbsp;4.0
         </p>
-
-
       </div>
     </aside>
   </div>
@@ -821,6 +818,13 @@
   <!-- Page-specific logic: load selected cover + controls + undo/redo + zoom/grid + stickers + light effects -->
   <script>
     document.addEventListener("DOMContentLoaded", () => {
+      // Extra safety: nuke any old legacy key this page might see
+      try {
+        localStorage.removeItem("cgSelectedCoverUrl");
+      } catch (e) {
+        console.warn("Could not clear legacy cgSelectedCoverUrl on customize:", e);
+      }
+
       const canvas       = document.getElementById("customCanvas");
       const canvasInner  = document.getElementById("canvasInner");
       const canvasTitle  = document.getElementById("canvasTitle");
@@ -840,10 +844,10 @@
       const bgStart      = document.getElementById("bgStart");
       const bgEnd        = document.getElementById("bgEnd");
       const bgOpacity    = document.getElementById("bgOpacity");
-      // Remember last gradient colors so we can revert if user cancels
-let lastBgStart = bgStart.value;
-let lastBgEnd   = bgEnd.value;
 
+      // Remember last gradient colors so we can revert if user cancels
+      let lastBgStart = bgStart.value;
+      let lastBgEnd   = bgEnd.value;
 
       const fxShadow     = document.getElementById("fxShadow");
       const fxGlow       = document.getElementById("fxGlow");
@@ -963,45 +967,45 @@ let lastBgEnd   = bgEnd.value;
           canvas.style.opacity = o.toFixed(2);
         }
       }
+
       function handleBgColorInput(which) {
-  return function (e) {
-    const input = e.target;
-    const newVal = input.value;
+        return function (e) {
+          const input = e.target;
+          const newVal = input.value;
 
-    // If we currently have an AI image, ask before wiping it
-    if (hasCoverImage) {
-      const ok = window.confirm(
-        "This will default and remove current background image. Continue?"
-      );
+          // If we currently have an AI image, ask before wiping it
+          if (hasCoverImage) {
+            const ok = window.confirm(
+              "This will default and remove current background image. Continue?"
+            );
 
-      if (!ok) {
-        // User cancelled: revert to previous value and bail
-        if (which === "start") {
-          input.value = lastBgStart;
-        } else {
-          input.value = lastBgEnd;
-        }
-        return;
+            if (!ok) {
+              // User cancelled: revert to previous value and bail
+              if (which === "start") {
+                input.value = lastBgStart;
+              } else {
+                input.value = lastBgEnd;
+              }
+              return;
+            }
+
+            // User agreed → drop the image and switch to gradient mode
+            hasCoverImage = false;
+            canvas.style.backgroundImage = "";
+          }
+
+          // Update stored previous values and repaint
+          if (which === "start") {
+            lastBgStart = newVal;
+          } else {
+            lastBgEnd = newVal;
+          }
+
+          updateGradient();
+          applyFromControls();
+          pushStateToHistory();
+        };
       }
-
-      // User agreed → drop the image and switch to gradient mode
-      hasCoverImage = false;
-      canvas.style.backgroundImage = "";
-    }
-
-    // Update stored previous values and repaint
-    if (which === "start") {
-      lastBgStart = newVal;
-    } else {
-      lastBgEnd = newVal;
-    }
-
-    updateGradient();
-    applyFromControls();
-    pushStateToHistory();
-  };
-}
-
 
       function applyFilter() {
         let f = "";
@@ -1168,6 +1172,10 @@ let lastBgEnd   = bgEnd.value;
           canvas.style.backgroundImage = "";
         }
 
+        // Keep lastBg* in sync with this restored state
+        lastBgStart = bgStart.value;
+        lastBgEnd   = bgEnd.value;
+
         updateGradient();
 
         if (state.canvasBackgroundImage && state.canvasBackgroundImage !== "none") {
@@ -1209,7 +1217,11 @@ let lastBgEnd   = bgEnd.value;
 
           let cfg = null;
           if (raw) {
-            cfg = JSON.parse(raw);
+            try {
+              cfg = JSON.parse(raw);
+            } catch (e) {
+              console.warn("Could not parse selected_cover_config JSON:", e, raw);
+            }
           }
 
           // --- 1) Text / font from config (if present) ---
@@ -1256,6 +1268,10 @@ let lastBgEnd   = bgEnd.value;
               bgStart.value = hex;
               bgEnd.value   = hex;
             }
+            // Keep lastBg* in sync with whatever we ended up using
+            lastBgStart = bgStart.value;
+            lastBgEnd   = bgEnd.value;
+
             updateGradient();
           }
 
@@ -1288,9 +1304,9 @@ let lastBgEnd   = bgEnd.value;
         applyFromControls();
         pushStateToHistory();
       });
-bgStart.addEventListener("input", handleBgColorInput("start"));
-bgEnd.addEventListener("input", handleBgColorInput("end"));
 
+      bgStart.addEventListener("input", handleBgColorInput("start"));
+      bgEnd.addEventListener("input", handleBgColorInput("end"));
 
       bgOpacity.addEventListener("input", () => {
         updateGradient();
@@ -1355,6 +1371,10 @@ bgEnd.addEventListener("input", handleBgColorInput("end"));
           canvas.style.backgroundImage = "";
           bgStart.value = c1;
           bgEnd.value   = c2;
+
+          lastBgStart = c1;
+          lastBgEnd   = c2;
+
           updateGradient();
           applyFromControls();
           pushStateToHistory();
@@ -1383,6 +1403,9 @@ bgEnd.addEventListener("input", handleBgColorInput("end"));
         bgStart.value   = "#a7c7e7";
         bgEnd.value     = "#c9b8f0";
         bgOpacity.value = 100;
+
+        lastBgStart = bgStart.value;
+        lastBgEnd   = bgEnd.value;
 
         fxShadow.checked = false;
         fxGlow.checked   = false;
@@ -1472,7 +1495,8 @@ bgEnd.addEventListener("input", handleBgColorInput("end"));
 
       const stickerListEl = document.getElementById("stickerList");
       let stickerIdCounter = 0;
-            // 🔴 DELETE STICKER MODE
+
+      // 🔴 DELETE STICKER MODE
       let deleteMode = false;
       const deleteBtn = document.getElementById("deleteStickerBtn");
 
@@ -1496,7 +1520,6 @@ bgEnd.addEventListener("input", handleBgColorInput("end"));
         });
       }
 
-
       if (stickerListEl && canvas) {
         STICKERS.forEach(sticker => {
           const img = document.createElement("img");
@@ -1512,6 +1535,7 @@ bgEnd.addEventListener("input", handleBgColorInput("end"));
           stickerListEl.appendChild(img);
         });
       }
+
       // Attach delete behavior to a sticker element
       function enableStickerDeletion(stickerEl) {
         stickerEl.addEventListener("click", (e) => {
@@ -1541,7 +1565,7 @@ bgEnd.addEventListener("input", handleBgColorInput("end"));
         sticker.style.transform = "translate(-50%, -50%)";
 
         makeStickerDraggable(sticker);
-         enableStickerDeletion(sticker);
+        enableStickerDeletion(sticker);
         canvas.appendChild(sticker);
       }
 

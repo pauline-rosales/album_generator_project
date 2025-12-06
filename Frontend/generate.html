@@ -127,6 +127,13 @@
   <!-- PAGE-SPECIFIC SCRIPT -->
   <script>
     document.addEventListener("DOMContentLoaded", () => {
+      // Defensive: wipe any legacy key from older builds
+      try {
+        localStorage.removeItem("cgSelectedCoverUrl");
+      } catch (e) {
+        console.warn("Could not clear legacy cgSelectedCoverUrl on generate:", e);
+      }
+
       const cards          = Array.from(document.querySelectorAll(".cover-card"));
       const titleInput     = document.querySelector(".text-input");
       const fontSelect     = document.querySelector(".right-panel .dropdown");
@@ -479,12 +486,13 @@
           }
 
           // Keep using selected_cover_config for text / style
-          const payload = {
-            title: (titleInput?.value || "").trim(),
-            font:  fontSelect?.value || "Modern Sans",
-            color,
-            backgroundImage: hasRealImage ? rawBg : null
-          };
+        const payload = {
+          title: (titleInput?.value || "").trim(),
+          font:  fontSelect?.value || "Modern Sans",
+          color
+          // no backgroundImage here – image is tracked separately as ai_album_image
+        };
+
 
           const payloadStr = JSON.stringify(payload);
           let saved = false;
@@ -576,8 +584,12 @@
           console.log("Top 10 vibe songs:", top10);
 
           if (images[0]) {
+          try {
             localStorage.setItem("ai_album_image", images[0]);
+          } catch (e) {
+            console.warn("Storage quota hit when saving ai_album_image:", e);
           }
+        }
 
           images.forEach((url, i) => {
             const card = cards[i];
