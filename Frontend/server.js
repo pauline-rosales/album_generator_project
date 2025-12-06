@@ -29,6 +29,30 @@ let spotifyState = {
   firstPlaylistTracks: []
 };
 
+function safeParseJson(raw, fallback) {
+  if (!raw) return fallback;
+
+  // If it's already an object, just return it
+  if (typeof raw === 'object') {
+    return raw;
+  }
+
+  let text = String(raw).trim();
+
+  // Try to isolate the JSON object between the first { and last }
+  const firstBrace = text.indexOf('{');
+  const lastBrace  = text.lastIndexOf('}');
+  if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+    text = text.slice(firstBrace, lastBrace + 1);
+  }
+
+  try {
+    return JSON.parse(text);
+  } catch (e) {
+    console.warn('safeParseJson: still failed to parse, using fallback:', e, '\nTEXT:', text);
+    return fallback;
+  }
+}
 
 // Make sure JSON bodies are parsed for /api/generate
 app.use(express.json({ limit: '2mb' }));
@@ -170,24 +194,21 @@ Playlist:
 ${playlistText}
     `.trim();
 
-       // 1) Ask text model ONCE for overall mood + base imagePrompt
-       const raw = await cfText(moodPrompt);
+// 1) Ask text model ONCE for overall mood + base imagePrompt
+const raw = await cfText(moodPrompt);
 
-       let parsed;
-       try {
-         // Cloudflare should return valid JSON as a string
-         parsed = JSON.parse(raw);
-       } catch (e) {
-         console.warn('Failed to parse JSON from text model, using fallback shape:', e, '\nRAW:', raw);
-         parsed = {
-           mood: 'mixed but emotional',
-           top10: songs.slice(0, 10),
-           imagePrompt:
-             `A simple album cover that visually matches the overall mood of the playlist. ` +
-             `Use colors and lighting that feel like the songs (for example, calm and soft, bright and energetic, or dark and moody). ` +
-             `Only use visual elements like shapes, colors, or a basic scene. No text, no letters, no numbers, no logos, no captions.`
-         };
-       } 
+// Default fallback if parsing fails
+const fallbackParsed = {
+  mood: 'mixed but emotional',
+  top10: songs.slice(0, 10),
+  imagePrompt:
+    `A simple album cover that visually matches the overall mood of the playlist. ` +
+    `Use colors and lighting that feel like the songs (for example, calm and soft, bright and energetic, or dark and moody). ` +
+    `Only use visual elements like shapes, colors, or a basic scene. No text, no letters, no numbers, no logos, no captions.`
+};
+
+const parsed = safeParseJson(raw, fallbackParsed);
+
    
     let mood = (parsed.mood || '').trim();   
     if (!mood || /^neutral|unknown$/i.test(mood)) {
