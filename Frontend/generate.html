@@ -518,7 +518,10 @@
     if (applyBtn) {
       applyBtn.addEventListener("click", () => {
         const selected = getSelectedCard();
-        if (!selected) return;
+        if (!selected) {
+          alert("Select a cover first.");
+          return;
+        }
 
         const preview = selected.querySelector(".cover-preview");
         if (!preview) return;
@@ -526,12 +529,22 @@
         const swatch = document.querySelector(".color-swatch.selected");
         const color  = swatch ? getComputedStyle(swatch).backgroundColor : null;
 
-        const rawBg = preview.style.backgroundImage;
+        const rawBg = preview.style.backgroundImage || "";
         const hasRealImage =
           rawBg &&
           rawBg !== "none" &&
           !rawBg.startsWith("linear-gradient");
 
+        // 🔹 Extract the actual URL from background-image: url("...")
+        let selectedImageUrl = null;
+        if (hasRealImage) {
+          const match = rawBg.match(/url\(["']?(.*?)["']?\)/);
+          if (match && match[1]) {
+            selectedImageUrl = match[1];
+          }
+        }
+
+        // 🔹 Keep using selected_cover_config for text / style
         const payload = {
           title: (titleInput?.value || "").trim(),
           font:  fontSelect?.value || "Modern Sans",
@@ -555,6 +568,15 @@
           }
         }
 
+        // 🔹 ALSO store the exact chosen image so Customize can trust this
+        if (selectedImageUrl) {
+          try {
+            window.localStorage.setItem("ai_album_image", selectedImageUrl);
+          } catch (e) {
+            console.warn("Failed to persist ai_album_image:", e);
+          }
+        }
+
         if (saved) {
           showToast("Changes applied – opening Customize ✨");
         } else {
@@ -566,6 +588,7 @@
         }, 600);
       });
     }
+
 
     async function generateAI() {
       const selected = getSelectedCard();

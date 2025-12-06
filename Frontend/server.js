@@ -54,7 +54,6 @@ async function cfText(prompt) {
     throw new Error('Missing CLOUDFLARE_ACCOUNT_ID or CLOUDFLARE_API_TOKEN');
   }
 
- 
   const url = `https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/ai/run/${CF_TEXT_MODEL}`;
 
   console.log('cfText URL:', url);
@@ -171,27 +170,26 @@ Playlist:
 ${playlistText}
     `.trim();
 
-    // 1) Ask text model ONCE for overall mood + base imagePrompt
-    const raw = await cfText(moodPrompt);
+       // 1) Ask text model ONCE for overall mood + base imagePrompt
+       const raw = await cfText(moodPrompt);
 
-    let parsed;
-    try {
-      const match = raw.match(/\{[\s\S]*\}/);
-      const jsonStr = match ? match[0] : raw;
-      parsed = JSON.parse(jsonStr);
-    } catch (e) {
-      console.warn('Failed to parse JSON from text model, using fallback shape:', e);
-      parsed = {
-        mood: 'mixed but emotional',
-        top10: songs.slice(0, 10),
-        imagePrompt:
-          `A simple album cover that visually matches the overall mood of the playlist. ` +
-          `Use colors and lighting that feel like the songs (for example, calm and soft, bright and energetic, or dark and moody). ` +
-          `Only use visual elements like shapes, colors, or a basic scene. No text, no letters, no numbers, no logos, no captions.`
-      };
-    }
-
-    let mood = (parsed.mood || '').trim();
+       let parsed;
+       try {
+         // Cloudflare should return valid JSON as a string
+         parsed = JSON.parse(raw);
+       } catch (e) {
+         console.warn('Failed to parse JSON from text model, using fallback shape:', e, '\nRAW:', raw);
+         parsed = {
+           mood: 'mixed but emotional',
+           top10: songs.slice(0, 10),
+           imagePrompt:
+             `A simple album cover that visually matches the overall mood of the playlist. ` +
+             `Use colors and lighting that feel like the songs (for example, calm and soft, bright and energetic, or dark and moody). ` +
+             `Only use visual elements like shapes, colors, or a basic scene. No text, no letters, no numbers, no logos, no captions.`
+         };
+       } 
+   
+    let mood = (parsed.mood || '').trim();   
     if (!mood || /^neutral|unknown$/i.test(mood)) {
       mood = 'playlist-based mood';
     }
@@ -267,11 +265,6 @@ Do NOT include any text, letters, numbers, logos, or captions in the image itsel
       return `data:image/png;base64,${base64}`;
     });
 
-    // (Optional) store first one for Customize page like before
-    if (images[0]) {
-      // You'll still set this in the frontend; server just returns images[]
-    }
-
     // 4) Send back mood + top10 + 3 different images
     res.json({
       mood,
@@ -301,7 +294,6 @@ app.get('/api/spotify/login', (req, res) => {
     scope: SPOTIFY_SCOPES || '',
     show_dialog: 'true'   // 🔹 force Spotify to show login/consent every time
   });
-
 
   const authUrl = `https://accounts.spotify.com/authorize?${params.toString()}`;
   console.log('Redirecting to Spotify:', authUrl);
@@ -539,10 +531,6 @@ app.get("/api/spotify/logout", (req, res) => {
     return res.json({ ok: false, error: err.message || String(err) });
   }
 });
-
-
-
-
 
 //404 fallback send Home
 app.use((_, res) => res.status(404).sendFile(path.join(PUBLIC_DIR, 'index.html')));

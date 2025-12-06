@@ -1188,71 +1188,85 @@ let lastBgEnd   = bgEnd.value;
       }
 
       function loadFromSelectedCover() {
-  try {
-    let raw = null;
+        try {
+          let raw = null;
 
-    // Try localStorage first
-    try {
-      raw = window.localStorage.getItem("selected_cover_config");
-    } catch (e) {
-      console.warn("localStorage blocked, will try sessionStorage:", e);
-    }
+          // Try localStorage first for the config
+          try {
+            raw = window.localStorage.getItem("selected_cover_config");
+          } catch (e) {
+            console.warn("localStorage blocked, will try sessionStorage:", e);
+          }
 
-    // Fallback: sessionStorage
-    if (!raw) {
-      try {
-        raw = window.sessionStorage.getItem("selected_cover_config");
-      } catch (e2) {
-        console.warn("sessionStorage also blocked:", e2);
+          // Fallback: sessionStorage
+          if (!raw) {
+            try {
+              raw = window.sessionStorage.getItem("selected_cover_config");
+            } catch (e2) {
+              console.warn("sessionStorage also blocked:", e2);
+            }
+          }
+
+          let cfg = null;
+          if (raw) {
+            cfg = JSON.parse(raw);
+          }
+
+          // --- 1) Text / font from config (if present) ---
+          if (cfg && cfg.title) {
+            titleInput.value = cfg.title;
+            canvasTitle.textContent = cfg.title;
+          }
+
+          if (cfg && cfg.font) {
+            const opts = Array.from(fontSelect.options).map(o => o.value);
+            if (opts.includes(cfg.font)) {
+              fontSelect.value = cfg.font;
+            }
+          }
+
+          // --- 2) Prefer the last selected image from Generate ---
+          let baseImage = null;
+          try {
+            baseImage = window.localStorage.getItem("ai_album_image");
+          } catch (e3) {
+            console.warn("Could not read ai_album_image:", e3);
+          }
+
+          if (baseImage) {
+            hasCoverImage = true;
+            canvas.style.backgroundImage    = "url(" + baseImage + ")";
+            canvas.style.backgroundSize     = "cover";
+            canvas.style.backgroundPosition = "center";
+            canvas.style.backgroundRepeat   = "no-repeat";
+            canvas.style.opacity            = "1";
+          } else if (cfg && cfg.backgroundImage && cfg.backgroundImage !== "none") {
+            // Fallback if for some reason ai_album_image is missing
+            hasCoverImage = true;
+            canvas.style.backgroundImage    = cfg.backgroundImage;
+            canvas.style.backgroundSize     = "cover";
+            canvas.style.backgroundPosition = "center";
+            canvas.style.backgroundRepeat   = "no-repeat";
+            canvas.style.opacity            = "1";
+          } else {
+            // No image → use gradient or color from cfg
+            hasCoverImage = false;
+            if (cfg && cfg.color) {
+              const hex = rgbToHexOrSame(cfg.color, bgStart.value);
+              bgStart.value = hex;
+              bgEnd.value   = hex;
+            }
+            updateGradient();
+          }
+
+          applyFromControls();
+        } catch (e) {
+          console.error("Failed to load selected cover:", e);
+          hasCoverImage = false;
+          updateGradient();
+          applyFromControls();
+        }
       }
-    }
-
-    if (!raw) {
-      hasCoverImage = false;
-      updateGradient();
-      applyFromControls();
-      return;
-    }
-
-    const cfg = JSON.parse(raw);
-
-    if (cfg.title) {
-      titleInput.value = cfg.title;
-      canvasTitle.textContent = cfg.title;
-    }
-
-    if (cfg.font) {
-      const opts = Array.from(fontSelect.options).map(o => o.value);
-      if (opts.includes(cfg.font)) {
-        fontSelect.value = cfg.font;
-      }
-    }
-
-    if (cfg.backgroundImage && cfg.backgroundImage !== "none") {
-      hasCoverImage = true;
-      canvas.style.backgroundImage    = cfg.backgroundImage;
-      canvas.style.backgroundSize     = "cover";
-      canvas.style.backgroundPosition = "center";
-      canvas.style.backgroundRepeat   = "no-repeat";
-      canvas.style.opacity            = "1";
-    } else {
-      hasCoverImage = false;
-      if (cfg.color) {
-        const hex = rgbToHexOrSame(cfg.color, bgStart.value);
-        bgStart.value = hex;
-        bgEnd.value   = hex;
-      }
-      updateGradient();
-    }
-
-      applyFromControls();
-    } catch (e) {
-      console.error("Failed to load selected_cover_config:", e);
-      hasCoverImage = false;
-      updateGradient();
-      applyFromControls();
-    }
-  }
 
       // --- EVENT WIRING ---
       titleInput.addEventListener("input", () => {
