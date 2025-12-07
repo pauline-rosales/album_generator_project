@@ -814,6 +814,7 @@
 
   <!-- Shared app logic (nav highlight, etc.) -->
   <script src="/assets/app.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 
   <!-- Page-specific logic: load selected cover + controls + undo/redo + zoom/grid + stickers + light effects -->
   <script>
@@ -830,6 +831,8 @@
       const canvasTitle  = document.getElementById("canvasTitle");
       const canvasSub    = document.getElementById("canvasSubtitle");
       const lightOverlay = document.getElementById("lightOverlay");
+      const custDownloadBtn = document.getElementById("custDownload");
+      const custShareBtn    = document.getElementById("custShare");
 
       const titleInput   = document.getElementById("custTitle");
       const subInput     = document.getElementById("custSubtitleInput");
@@ -920,6 +923,81 @@
           }
         });
       }
+            // ===================== DOWNLOAD & SHARE (Customize) =====================
+      function captureCoverAsCanvas() {
+        if (!window.html2canvas) {
+          alert("Download is not available because html2canvas is missing.");
+          return null;
+        }
+
+        // Capture the entire cover area including stickers, light effects, etc.
+        return window.html2canvas(canvas, {
+          backgroundColor: null,
+          useCORS: true,
+          scale: 2 // higher resolution
+        });
+      }
+
+      // Download as PNG
+      if (custDownloadBtn) {
+        custDownloadBtn.addEventListener("click", async () => {
+          try {
+            const hcCanvas = await captureCoverAsCanvas();
+            if (!hcCanvas) return;
+
+            const dataUrl = hcCanvas.toDataURL("image/png");
+            const title   = (titleInput.value || "cover").trim() || "cover";
+
+            const link = document.createElement("a");
+            link.href = dataUrl;
+            link.download = `${title}.png`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+          } catch (err) {
+            console.error("Download failed:", err);
+            alert("Sorry, something went wrong while generating the image.");
+          }
+        });
+      }
+
+      // Share using Web Share API (if supported), otherwise fall back to download
+      if (custShareBtn) {
+        custShareBtn.addEventListener("click", async () => {
+          try {
+            const hcCanvas = await captureCoverAsCanvas();
+            if (!hcCanvas) return;
+
+            const dataUrl = hcCanvas.toDataURL("image/png");
+            const title   = (titleInput.value || "AI Album Cover").trim() || "AI Album Cover";
+
+            const res  = await fetch(dataUrl);
+            const blob = await res.blob();
+            const file = new File([blob], `${title}.png`, { type: "image/png" });
+
+            if (navigator.share && navigator.canShare?.({ files: [file] })) {
+              await navigator.share({
+                title,
+                text: "Check out this cover I made!",
+                files: [file]
+              });
+            } else {
+              // Fallback: just download if share isn't supported
+              const link = document.createElement("a");
+              link.href = dataUrl;
+              link.download = `${title}.png`;
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+              alert("Sharing isn't supported on this browser, so the cover was downloaded instead.");
+            }
+          } catch (err) {
+            console.error("Share failed:", err);
+            alert("Sorry, something went wrong while preparing the image to share.");
+          }
+        });
+      }
+
 
       // --- HISTORY & ORIGINAL STATE ---
       const historyStack = [];
