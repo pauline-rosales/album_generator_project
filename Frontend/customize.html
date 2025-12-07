@@ -627,16 +627,83 @@
       </div>
 
       <div class="control-group">
-        <div class="control-label">Recent Edits</div>
-        <div class="history-list" id="custHistory">
-          <div class="history-item">Late Night Vibes v3</div>
-          <div class="history-item">Late Night Vibes v2</div>
-          <div class="history-item">Late Night Vibes v1</div>
+        <div class="control-label">Fabric Textures</div>
+        <div class="template-grid">
+          <!-- Denim -->
+          <div class="template-card" data-fabric="/assets/fabrics/denim.jpg">
+            <div class="template-preview"
+                 style="background-image: url('/assets/fabrics/denim.jpg');
+                        background-size: cover;
+                        background-position: center;"></div>
+            <div class="template-name">Denim</div>
+          </div>
+      
+          <!-- Leather -->
+          <div class="template-card" data-fabric="/assets/fabrics/leather.jpg">
+            <div class="template-preview"
+                 style="background-image: url('/assets/fabrics/leather.jpg');
+                        background-size: cover;
+                        background-position: center;"></div>
+            <div class="template-name">Leather</div>
+          </div>
+      
+          <!-- Linen -->
+          <div class="template-card" data-fabric="/assets/fabrics/linen.jpg">
+            <div class="template-preview"
+                 style="background-image: url('/assets/fabrics/linen.jpg');
+                        background-size: cover;
+                        background-position: center;"></div>
+            <div class="template-name">Linen</div>
+          </div>
+      
+          <!-- Picnic Gingham -->
+          <div class="template-card" data-fabric="/assets/fabrics/picnic-gingham.jpg">
+            <div class="template-preview"
+                 style="background-image: url('/assets/fabrics/picnic-gingham.jpg');
+                        background-size: cover;
+                        background-position: center;"></div>
+            <div class="template-name">Picnic Gingham</div>
+          </div>
+      
+          <!-- Quilt -->
+          <div class="template-card" data-fabric="/assets/fabrics/quilt.jpg">
+            <div class="template-preview"
+                 style="background-image: url('/assets/fabrics/quilt.jpg');
+                        background-size: cover;
+                        background-position: center;"></div>
+            <div class="template-name">Quilt</div>
+          </div>
+      
+          <!-- Tea Towel -->
+          <div class="template-card" data-fabric="/assets/fabrics/teaTowel.jpg">
+            <div class="template-preview"
+                 style="background-image: url('/assets/fabrics/teaTowel.jpg');
+                        background-size: cover;
+                        background-position: center;"></div>
+            <div class="template-name">Tea Towel</div>
+          </div>
+      
+          <!-- Tulle -->
+          <div class="template-card" data-fabric="/assets/fabrics/tulle.jpg">
+            <div class="template-preview"
+                 style="background-image: url('/assets/fabrics/tulle.jpg');
+                        background-size: cover;
+                        background-position: center;"></div>
+            <div class="template-name">Tulle</div>
+          </div>
+      
+          <!-- Velvet -->
+          <div class="template-card" data-fabric="/assets/fabrics/velvet.jpg">
+            <div class="template-preview"
+                 style="background-image: url('/assets/fabrics/velvet.jpg');
+                        background-size: cover;
+                        background-position: center;"></div>
+            <div class="template-name">Velvet</div>
+          </div>
         </div>
       </div>
-
-      <button class="change-playlist-btn">Load Preset</button>
     </aside>
+    
 
     <!-- Center Area: Canvas -->
     <main class="center-area">
@@ -1443,21 +1510,43 @@
       const templates = Array.from(document.querySelectorAll(".template-card"));
       templates.forEach(card => {
         card.addEventListener("click", () => {
-          const c1 = card.dataset.c1 || "#a7c7e7";
-          const c2 = card.dataset.c2 || "#c9b8f0";
-          hasCoverImage = false;
-          canvas.style.backgroundImage = "";
-          bgStart.value = c1;
-          bgEnd.value   = c2;
+          const fabricUrl = card.dataset.fabric;
 
-          lastBgStart = c1;
-          lastBgEnd   = c2;
+          if (fabricUrl) {
+            // FABRIC PRESET → use texture image as background
+            hasCoverImage = true;
+            canvas.style.backgroundImage = `url("${fabricUrl}")`;
+            canvas.style.backgroundSize = "cover";
+            canvas.style.backgroundPosition = "center";
+            canvas.style.backgroundRepeat = "repeat"; // change to "no-repeat" if you prefer
 
-          updateGradient();
+            // respect the opacity slider
+            const o = Math.max(
+              0,
+              Math.min(100, parseInt(bgOpacity.value || "100", 10))
+            ) / 100;
+            canvas.style.opacity = o.toFixed(2);
+          } else {
+            // NORMAL COLOR / GRADIENT TEMPLATE (what you already had)
+            const c1 = card.dataset.c1 || "#a7c7e7";
+            const c2 = card.dataset.c2 || "#c9b8f0";
+
+            hasCoverImage = false;
+            canvas.style.backgroundImage = "";
+            bgStart.value = c1;
+            bgEnd.value   = c2;
+
+            lastBgStart = c1;
+            lastBgEnd   = c2;
+
+            updateGradient();
+          }
+
           applyFromControls();
           pushStateToHistory();
         });
       });
+
 
       // Reset (does NOT change originalState)
       resetBtn.addEventListener("click", () => {
