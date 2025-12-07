@@ -602,7 +602,7 @@
   <div class="dashboard">
     <!-- Left Panel: Templates & History -->
     <aside class="left-panel">
-      <h2 class="panel-title">Templates & Presets</h2>
+      <h2 class="panel-title">Templates & Fabrics</h2>
       
       <div class="control-group">
         <div class="control-label">Style Templates</div>
@@ -1028,42 +1028,58 @@
         });
       }
 
-      // Share using Web Share API (if supported), otherwise fall back to download
-      if (custShareBtn) {
-        custShareBtn.addEventListener("click", async () => {
-          try {
-            const hcCanvas = await captureCoverAsCanvas();
-            if (!hcCanvas) return;
+// Share using Web Share API (if supported), otherwise fall back to download
+if (custShareBtn) {
+  custShareBtn.addEventListener("click", async () => {
+    const hcCanvas = await captureCoverAsCanvas();
+    if (!hcCanvas) return;
 
-            const dataUrl = hcCanvas.toDataURL("image/png");
-            const title   = (titleInput.value || "AI Album Cover").trim() || "AI Album Cover";
+    const title = (titleInput.value || "AI Album Cover").trim() || "AI Album Cover";
+    const fileName = `${title}.png`;
 
-            const res  = await fetch(dataUrl);
-            const blob = await res.blob();
-            const file = new File([blob], `${title}.png`, { type: "image/png" });
+    // Turn canvas into Blob + data URL
+    const blob = await new Promise((resolve, reject) => {
+      hcCanvas.toBlob(b => {
+        if (b) resolve(b);
+        else reject(new Error("toBlob failed"));
+      }, "image/png");
+    });
+    const dataUrl = hcCanvas.toDataURL("image/png");
 
-            if (navigator.share && navigator.canShare?.({ files: [file] })) {
-              await navigator.share({
-                title,
-                text: "Check out this cover I made!",
-                files: [file]
-              });
-            } else {
-              // Fallback: just download if share isn't supported
-              const link = document.createElement("a");
-              link.href = dataUrl;
-              link.download = `${title}.png`;
-              document.body.appendChild(link);
-              link.click();
-              document.body.removeChild(link);
-              alert("Sharing isn't supported on this browser, so the cover was downloaded instead.");
-            }
-          } catch (err) {
-            console.error("Share failed:", err);
-            alert("Sorry, something went wrong while preparing the image to share.");
-          }
-        });
+    // Simple download fallback
+    function downloadFallback() {
+      const link = document.createElement("a");
+      link.href = dataUrl;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    const canFileShare = !!(navigator.share && navigator.canShare);
+
+    if (canFileShare) {
+      try {
+        const file = new File([blob], fileName, { type: "image/png" });
+
+        if (navigator.canShare({ files: [file] })) {
+          await navigator.share({
+            title,
+            text: "Check out this cover I made!",
+            files: [file]
+          });
+          return; // success → no download
+        }
+      } catch (err) {
+        console.warn("Customize share failed, falling back to download:", err);
+        // fall through to downloadFallback
       }
+    }
+
+    // If file sharing isn't supported or anything failed → just download quietly
+    downloadFallback();
+  });
+}
 
 
       // --- HISTORY & ORIGINAL STATE ---

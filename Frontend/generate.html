@@ -661,49 +661,57 @@
         });
       }
 
-      // Share selected cover (or fall back to download)
-      if (shareBtn) {
-        shareBtn.addEventListener("click", async () => {
-          const preview = getSelectedPreview();
-          if (!preview) {
-            alert("Select a cover first.");
-            return;
-          }
+// Share selected cover (or fall back to download)
+if (shareBtn) {
+  shareBtn.addEventListener("click", async () => {
+    const preview = getSelectedPreview();
+    if (!preview) {
+      alert("Select a cover first.");
+      return;
+    }
 
-          const bg = preview.style.backgroundImage;
-          const url = extractBackgroundUrl(bg);
-          if (!url) {
-            alert("Generate a cover first before sharing.");
-            return;
-          }
+    const bg = preview.style.backgroundImage;
+    const url = extractBackgroundUrl(bg);
+    if (!url) {
+      alert("Generate a cover first before sharing.");
+      return;
+    }
 
-          const fileName = `cover_${getFileBaseTitle()}.png`;
+    const fileName = `cover_${getFileBaseTitle()}.png`;
 
-          try {
-            const res = await fetch(url);
-            const blob = await res.blob();
-            const file = new File([blob], fileName, { type: "image/png" });
+    // Helper: simple download fallback
+    function downloadFallback(href) {
+      const a = document.createElement("a");
+      a.href = href;
+      a.download = fileName;
+      a.click();
+    }
 
-            if (navigator.canShare && navigator.canShare({ files: [file] })) {
-              await navigator.share({
-                title: titleInput?.value || "Playlist cover",
-                files: [file]
-              });
-            } else {
-              const a = document.createElement("a");
-              const dlUrl = URL.createObjectURL(blob);
-              a.href = dlUrl;
-              a.download = fileName;
-              a.click();
-              URL.revokeObjectURL(dlUrl);
-              alert("Sharing isn't fully supported here, so the cover was downloaded instead.");
-            }
-          } catch (err) {
-            console.error("Share error:", err);
-            alert("Could not share this cover on this browser.");
-          }
-        });
+    const canFileShare = !!(navigator.share && navigator.canShare);
+
+    if (canFileShare) {
+      try {
+        const res = await fetch(url);
+        const blob = await res.blob();
+        const file = new File([blob], fileName, { type: "image/png" });
+
+        if (navigator.canShare({ files: [file] })) {
+          await navigator.share({
+            title: titleInput?.value || "Playlist cover",
+            files: [file]
+          });
+          return; // success → no download
+        }
+      } catch (err) {
+        console.warn("File share failed, falling back to download:", err);
+        // fall through to downloadFallback
       }
+    }
+
+    // If file sharing isn't supported or anything failed → just download from URL
+    downloadFallback(url);
+    });
+  }
 
       loadSpotifyState();
       updateSpotifyButtonState();
