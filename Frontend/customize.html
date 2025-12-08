@@ -8,7 +8,7 @@
   <!-- Shared styles for the site -->
   <link rel="stylesheet" href="/assets/styles.css"/>
 
-  <!-- Page-specific styles (your original CSS) -->
+  <!-- Page-specific styles  -->
   <style>
     * {
       margin: 0;
@@ -31,6 +31,11 @@
       align-items: center;
       padding: 0 40px;
       border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
     }
 
     .logo {
@@ -73,6 +78,7 @@
       grid-template-columns: 300px 1fr 340px;
       height: calc(100vh - 70px);
       gap: 0;
+      margin-top: 70px; 
     }
 
     /* Left Panel */
@@ -251,6 +257,7 @@
       border-radius: 16px;
       padding: 40px;
       min-height: 400px;
+      overflow: hidden; /* so zoom crops the edges instead of spilling */
     }
 
     .cover-canvas {
@@ -264,11 +271,36 @@
       justify-content: center;
       box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
       border: 1px solid rgba(255, 255, 255, 0.1);
+      position: relative;
+      overflow: hidden;
+      transform-origin: center center;
     }
 
     .canvas-content {
       padding: 40px;
       text-align: center;
+      position: relative;
+      z-index: 1;
+    }
+
+    .canvas-content h2 {
+      margin-bottom: 8px;
+    }
+
+    .canvas-content p {
+      margin-top: 0;
+      font-size: 14px;
+      opacity: 0.9;
+    }
+
+    /* Light effect overlay */
+    .light-effect-overlay {
+      position: absolute;
+      inset: -20%;
+      pointer-events: none;
+      opacity: 0.8;
+      mix-blend-mode: screen;
+      z-index: 0;
     }
 
     .action-bar {
@@ -453,6 +485,48 @@
       top: 50%;
     }
 
+    /* Sticker picker */
+    .sticker-list {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .sticker-thumb {
+      width: 40px;
+      height: 40px;
+      padding: 4px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      cursor: pointer;
+      transition:
+        transform 0.12s ease,
+        background 0.12s ease,
+        border-color 0.12s ease;
+    }
+
+    .sticker-thumb:hover {
+      transform: translateY(-1px) scale(1.03);
+      background: rgba(255, 255, 255, 0.12);
+      border-color: rgba(201, 184, 240, 0.5);
+    }
+
+    .sticker-instance {
+      position: absolute;
+      width: 72px;
+      height: 72px;
+      pointer-events: auto;
+      user-select: none;
+      cursor: grab;
+      z-index: 2;
+    }
+
+    .sticker-instance:active {
+      cursor: grabbing;
+    }
+
     /* Scrollbar */
     ::-webkit-scrollbar {
       width: 8px;
@@ -521,14 +595,25 @@
       <a class="nav-item" href="/generate">Generate</a>
       <a class="nav-item" href="/customize">Customize</a>
       <a class="nav-item" href="/help">Help</a>
+  
+      <!-- Theme toggle -->
+      <button
+        id="themeToggle"
+        class="theme-toggle"
+        type="button"
+        aria-label="Toggle light and dark mode"
+      >
+        🌙
+      </button>
     </div>
   </nav>
+  
 
   <!-- Dashboard -->
   <div class="dashboard">
     <!-- Left Panel: Templates & History -->
     <aside class="left-panel">
-      <h2 class="panel-title">Templates & Presets</h2>
+      <h2 class="panel-title">Templates & Fabrics</h2>
       
       <div class="control-group">
         <div class="control-label">Style Templates</div>
@@ -553,26 +638,93 @@
       </div>
 
       <div class="control-group">
-        <div class="control-label">Recent Edits</div>
-        <div class="history-list" id="custHistory">
-          <div class="history-item">Late Night Vibes v3</div>
-          <div class="history-item">Late Night Vibes v2</div>
-          <div class="history-item">Late Night Vibes v1</div>
+        <div class="control-label">Fabric Textures</div>
+        <div class="template-grid">
+          <!-- Denim -->
+          <div class="template-card" data-fabric="/assets/fabrics/denim.jpg">
+            <div class="template-preview"
+                 style="background-image: url('/assets/fabrics/denim.jpg');
+                        background-size: cover;
+                        background-position: center;"></div>
+            <div class="template-name">Denim</div>
+          </div>
+      
+          <!-- Leather -->
+          <div class="template-card" data-fabric="/assets/fabrics/leather.jpg">
+            <div class="template-preview"
+                 style="background-image: url('/assets/fabrics/leather.jpg');
+                        background-size: cover;
+                        background-position: center;"></div>
+            <div class="template-name">Leather</div>
+          </div>
+      
+          <!-- Linen -->
+          <div class="template-card" data-fabric="/assets/fabrics/linen.jpg">
+            <div class="template-preview"
+                 style="background-image: url('/assets/fabrics/linen.jpg');
+                        background-size: cover;
+                        background-position: center;"></div>
+            <div class="template-name">Linen</div>
+          </div>
+      
+          <!-- Picnic Gingham -->
+          <div class="template-card" data-fabric="/assets/fabrics/picnic-gingham.jpg">
+            <div class="template-preview"
+                 style="background-image: url('/assets/fabrics/picnic-gingham.jpg');
+                        background-size: cover;
+                        background-position: center;"></div>
+            <div class="template-name">Picnic Gingham</div>
+          </div>
+      
+          <!-- Quilt -->
+          <div class="template-card" data-fabric="/assets/fabrics/quilt.jpg">
+            <div class="template-preview"
+                 style="background-image: url('/assets/fabrics/quilt.jpg');
+                        background-size: cover;
+                        background-position: center;"></div>
+            <div class="template-name">Quilt</div>
+          </div>
+      
+          <!-- Tea Towel -->
+          <div class="template-card" data-fabric="/assets/fabrics/teaTowel.jpg">
+            <div class="template-preview"
+                 style="background-image: url('/assets/fabrics/teaTowel.jpg');
+                        background-size: cover;
+                        background-position: center;"></div>
+            <div class="template-name">Tea Towel</div>
+          </div>
+      
+          <!-- Tulle -->
+          <div class="template-card" data-fabric="/assets/fabrics/tulle.jpg">
+            <div class="template-preview"
+                 style="background-image: url('/assets/fabrics/tulle.jpg');
+                        background-size: cover;
+                        background-position: center;"></div>
+            <div class="template-name">Tulle</div>
+          </div>
+      
+          <!-- Velvet -->
+          <div class="template-card" data-fabric="/assets/fabrics/velvet.jpg">
+            <div class="template-preview"
+                 style="background-image: url('/assets/fabrics/velvet.jpg');
+                        background-size: cover;
+                        background-position: center;"></div>
+            <div class="template-name">Velvet</div>
+          </div>
         </div>
       </div>
-
-      <button class="change-playlist-btn">Load Preset</button>
     </aside>
+    
 
     <!-- Center Area: Canvas -->
     <main class="center-area">
       <div class="section-header">
         <h2 class="section-title">Cover Editor</h2>
         <div style="display: flex; gap: 12px;">
-          <button class="regenerate-btn">Undo</button>
-          <button class="regenerate-btn">Redo</button>
+          <button id="undoBtn" class="regenerate-btn">Undo</button>
+          <button id="redoBtn" class="regenerate-btn">Redo</button>
         </div>
-      </div>
+      </div>      
 
       <div class="canvas-container">
         <div class="canvas-toolbar">
@@ -582,8 +734,12 @@
         </div>
         <div class="canvas-area">
           <div id="customCanvas" class="cover-canvas">
+            <!-- light effect overlay -->
+            <div id="lightOverlay" class="light-effect-overlay"></div>
+
             <div id="canvasInner" class="canvas-content">
               <h2 id="canvasTitle">Late Night Vibes</h2>
+              <p id="canvasSubtitle"></p>
             </div>
           </div>
         </div>
@@ -594,7 +750,7 @@
         <button id="custReset" class="action-bar-btn secondary-action">Start Over</button>
         <button id="custSave" class="action-bar-btn secondary-action">Save Draft</button>
         <button id="custDownload" class="action-bar-btn primary-action">Download</button>
-        <button class="action-bar-btn primary-action">Share</button>
+        <button id="custShare" class="action-bar-btn primary-action">Share</button>
       </div>
     </main>
 
@@ -606,7 +762,7 @@
       <div class="control-group">
         <div class="control-label">Text Content</div>
         <input id="custTitle" type="text" class="text-input" placeholder="Title" value="Late Night Vibes">
-        <input id="custSubtitle" type="text" class="text-input" placeholder="Subtitle" value="" style="margin-top: 8px;">
+        <input id="custSubtitleInput" type="text" class="text-input" placeholder="Subtitle" value="" style="margin-top: 8px;">
       </div>
 
       <div class="control-group">
@@ -689,13 +845,43 @@
 
       <div class="control-group">
         <div class="control-label">Filters</div>
-        <select class="dropdown">
+        <select id="custFilter" class="dropdown">
           <option>None</option>
           <option>Vintage</option>
           <option>High Contrast</option>
           <option>Grayscale</option>
           <option>Sepia</option>
         </select>
+      </div>
+
+      <!-- Light Effects (lens flare / light leaks) -->
+      <div class="control-group">
+        <div class="control-label">Light Effects</div>
+        <select id="lightEffect" class="dropdown">
+          <option value="none">None</option>
+          <option value="soft-glow">Soft Glow</option>
+          <option value="neon-flare">Neon Flare</option>
+          <option value="retro-leak">Retro Light Leak</option>
+          <option value="sunset-beam">Sunset Beam</option>
+        </select>
+      </div>
+
+      <!-- Stickers (OpenMoji) -->
+      <div class="control-group">
+        <div class="control-label">Stickers</div>
+        <div id="stickerList" class="sticker-list">
+          <!-- Filled by JS -->
+        </div>
+        <button
+          id="deleteStickerBtn"
+          class="action-bar-btn secondary-action"
+          style="margin-top: 8px; width: 100%;"
+        >
+          Delete Sticker
+        </button>
+        <p style="margin-top: 6px; font-size: 11px; color: #8b92b0; opacity: 0.8;">
+          Emojis by OpenMoji · CC&nbsp;BY-SA&nbsp;4.0
+        </p>
       </div>
     </aside>
   </div>
@@ -704,7 +890,915 @@
   <div class="flow-indicator arrow-left-center">→</div>
   <div class="flow-indicator arrow-center-right">→</div>
 
-  <!-- Shared app logic (nav highlight, customize wiring, download, etc.) -->
+  <!-- Shared app logic (nav highlight, etc.) -->
   <script src="/assets/app.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+
+  <!-- Page-specific logic: load selected cover + controls + undo/redo + zoom/grid + stickers + light effects -->
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      // Extra safety: nuke any old legacy key this page might see
+      try {
+        localStorage.removeItem("cgSelectedCoverUrl");
+      } catch (e) {
+        console.warn("Could not clear legacy cgSelectedCoverUrl on customize:", e);
+      }
+
+      const canvas       = document.getElementById("customCanvas");
+      const canvasInner  = document.getElementById("canvasInner");
+      const canvasTitle  = document.getElementById("canvasTitle");
+      const canvasSub    = document.getElementById("canvasSubtitle");
+      const lightOverlay = document.getElementById("lightOverlay");
+      const custDownloadBtn = document.getElementById("custDownload");
+      const custShareBtn    = document.getElementById("custShare");
+
+      const titleInput   = document.getElementById("custTitle");
+      const subInput     = document.getElementById("custSubtitleInput");
+      const sizeInput    = document.getElementById("custSize");
+
+      const posButtons   = Array.from(document.querySelectorAll("#custPos .group-btn"));
+      const fontSelect   = document.getElementById("custFont");
+      const weightButtons= Array.from(document.querySelectorAll("#custWeight .group-btn"));
+
+      const textColor    = document.getElementById("textColor");
+      const textColorCode= document.getElementById("textColorCode");
+      const bgStart      = document.getElementById("bgStart");
+      const bgEnd        = document.getElementById("bgEnd");
+      const bgOpacity    = document.getElementById("bgOpacity");
+
+      // Remember last gradient colors so we can revert if user cancels
+      let lastBgStart = bgStart.value;
+      let lastBgEnd   = bgEnd.value;
+
+      const fxShadow     = document.getElementById("fxShadow");
+      const fxGlow       = document.getElementById("fxGlow");
+      const fxBlur       = document.getElementById("fxBlur");
+      const filterSelect = document.getElementById("custFilter");
+
+      const lightEffectSelect = document.getElementById("lightEffect");
+
+      const resetBtn     = document.getElementById("custReset");
+      const saveBtn      = document.getElementById("custSave");
+
+      const undoBtn      = document.getElementById("undoBtn");
+      const redoBtn      = document.getElementById("redoBtn");
+
+      // Track if we are using a generated cover image
+      let hasCoverImage = false;
+
+      // --- ZOOM + GRID BUTTONS ---
+      const toolButtons = Array.from(document.querySelectorAll(".tool-btn"));
+      const zoomInBtn   = toolButtons.find(btn => btn.textContent.toLowerCase().includes("zoom in"));
+      const zoomOutBtn  = toolButtons.find(btn => btn.textContent.toLowerCase().includes("zoom out"));
+      const gridBtn     = toolButtons.find(btn => btn.textContent.toLowerCase().includes("grid"));
+
+      let zoomLevel = 1;
+      const ZOOM_STEP = 0.1;
+      const ZOOM_MIN  = 0.6;
+      const ZOOM_MAX  = 1.8;
+
+      function applyZoom() {
+        canvas.style.transform = "scale(" + zoomLevel + ")";
+        canvas.style.transformOrigin = "center center";
+      }
+
+      let gridOn = false;
+      let gridOverlay = null;
+
+      function ensureGridOverlay() {
+        if (!gridOverlay) {
+          gridOverlay = document.createElement("div");
+          gridOverlay.className = "canvas-grid-overlay";
+          canvas.appendChild(gridOverlay);
+        }
+        return gridOverlay;
+      }
+
+      if (zoomInBtn) {
+        zoomInBtn.addEventListener("click", () => {
+          zoomLevel = Math.min(ZOOM_MAX, zoomLevel + ZOOM_STEP);
+          applyZoom();
+        });
+      }
+
+      if (zoomOutBtn) {
+        zoomOutBtn.addEventListener("click", () => {
+          zoomLevel = Math.max(ZOOM_MIN, zoomLevel - ZOOM_STEP);
+          applyZoom();
+        });
+      }
+
+      if (gridBtn) {
+        gridBtn.addEventListener("click", () => {
+          gridOn = !gridOn;
+          const overlay = ensureGridOverlay();
+          overlay.style.display = gridOn ? "block" : "none";
+
+          if (gridOn) {
+            gridBtn.classList.add("grid-active");
+          } else {
+            gridBtn.classList.remove("grid-active");
+          }
+        });
+      }
+            // ===================== DOWNLOAD & SHARE (Customize) =====================
+      function captureCoverAsCanvas() {
+        if (!window.html2canvas) {
+          alert("Download is not available because html2canvas is missing.");
+          return null;
+        }
+
+        // Capture the entire cover area including stickers, light effects, etc.
+        return window.html2canvas(canvas, {
+          backgroundColor: null,
+          useCORS: true,
+          scale: 2 // higher resolution
+        });
+      }
+
+      // Download as PNG
+      if (custDownloadBtn) {
+        custDownloadBtn.addEventListener("click", async () => {
+          try {
+            const hcCanvas = await captureCoverAsCanvas();
+            if (!hcCanvas) return;
+
+            const dataUrl = hcCanvas.toDataURL("image/png");
+            const title   = (titleInput.value || "cover").trim() || "cover";
+
+            const link = document.createElement("a");
+            link.href = dataUrl;
+            link.download = `${title}.png`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+          } catch (err) {
+            console.error("Download failed:", err);
+            alert("Sorry, something went wrong while generating the image.");
+          }
+        });
+      }
+
+// Share using Web Share API (if supported), otherwise fall back to download
+if (custShareBtn) {
+  custShareBtn.addEventListener("click", async () => {
+    const hcCanvas = await captureCoverAsCanvas();
+    if (!hcCanvas) return;
+
+    const title = (titleInput.value || "AI Album Cover").trim() || "AI Album Cover";
+    const fileName = `${title}.png`;
+
+    // Turn canvas into Blob + data URL
+    const blob = await new Promise((resolve, reject) => {
+      hcCanvas.toBlob(b => {
+        if (b) resolve(b);
+        else reject(new Error("toBlob failed"));
+      }, "image/png");
+    });
+    const dataUrl = hcCanvas.toDataURL("image/png");
+
+    // Simple download fallback
+    function downloadFallback() {
+      const link = document.createElement("a");
+      link.href = dataUrl;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    const canFileShare = !!(navigator.share && navigator.canShare);
+
+    if (canFileShare) {
+      try {
+        const file = new File([blob], fileName, { type: "image/png" });
+
+        if (navigator.canShare({ files: [file] })) {
+          await navigator.share({
+            title,
+            text: "Check out this cover I made!",
+            files: [file]
+          });
+          return; // success → no download
+        }
+      } catch (err) {
+        console.warn("Customize share failed, falling back to download:", err);
+        // fall through to downloadFallback
+      }
+    }
+    downloadFallback();
+  });
+}
+
+
+      // --- HISTORY & ORIGINAL STATE ---
+      const historyStack = [];
+      let isRestoringState = false;
+      let originalState = null; // snapshot of the original selected cover
+
+      function mapUiFont(name) {
+        switch ((name || "").toLowerCase()) {
+          case "classic serif":
+            return "Georgia, 'Times New Roman', serif";
+          case "bold display":
+            return "'Impact','Haettenschweiler','Arial Black',sans-serif";
+          case "elegant script":
+            return "'Brush Script MT',cursive,'Segoe Script'";
+          case "monospace":
+            return "'Fira Code','SFMono-Regular','Menlo',monospace";
+          case "handwritten":
+            return "'Comic Sans MS','Bradley Hand','Segoe Script',cursive";
+          default:
+            return "Inter,'Segoe UI',sans-serif";
+        }
+      }
+
+      function rgbToHexOrSame(colorStr, fallback) {
+        if (!colorStr) return fallback;
+        const m = colorStr.match(/^rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)$/i);
+        if (!m) return colorStr; 
+        const r = Number(m[1]).toString(16).padStart(2, "0");
+        const g = Number(m[2]).toString(16).padStart(2, "0");
+        const b = Number(m[3]).toString(16).padStart(2, "0");
+        return ("#" + r + g + b).toUpperCase();
+      }
+
+      function updateGradient() {
+        const s = bgStart.value || "#a7c7e7";
+        const e = bgEnd.value   || "#c9b8f0";
+        const o = Math.max(0, Math.min(100, parseInt(bgOpacity.value || "100", 10))) / 100;
+
+        if (hasCoverImage) {
+          // Don't overwrite image; just fade the whole cover
+          canvas.style.opacity = o.toFixed(2);
+        } else {
+          // No image → gradient background
+          canvas.style.backgroundImage = "linear-gradient(135deg, " + s + " 0%, " + e + " 100%)";
+          canvas.style.opacity = o.toFixed(2);
+        }
+      }
+
+      function handleBgColorInput(which) {
+        return function (e) {
+          const input = e.target;
+          const newVal = input.value;
+
+          // If we currently have an AI image, ask before wiping it
+          if (hasCoverImage) {
+            const ok = window.confirm(
+              "This will default and remove current background image. Continue?"
+            );
+
+            if (!ok) {
+              // User cancelled: revert to previous value and bail
+              if (which === "start") {
+                input.value = lastBgStart;
+              } else {
+                input.value = lastBgEnd;
+              }
+              return;
+            }
+
+            // User agreed → drop the image and switch to gradient mode
+            hasCoverImage = false;
+            canvas.style.backgroundImage = "";
+          }
+
+          // Update stored previous values and repaint
+          if (which === "start") {
+            lastBgStart = newVal;
+          } else {
+            lastBgEnd = newVal;
+          }
+
+          updateGradient();
+          applyFromControls();
+          pushStateToHistory();
+        };
+      }
+
+      function applyFilter() {
+        let f = "";
+        switch ((filterSelect.value || "").toLowerCase()) {
+          case "vintage":
+            f = "sepia(0.4) contrast(1.1)";
+            break;
+          case "high contrast":
+            f = "contrast(1.3) saturate(1.1)";
+            break;
+          case "grayscale":
+            f = "grayscale(1)";
+            break;
+          case "sepia":
+            f = "sepia(1)";
+            break;
+          default:
+            f = "";
+        }
+        if (fxBlur.checked) {
+          f = (f ? f + " " : "") + "blur(2px)";
+        }
+        canvas.style.filter = f || "none";
+      }
+
+      function applyLightEffect() {
+        if (!lightOverlay) return;
+        const val = (lightEffectSelect.value || "none").toLowerCase();
+        lightOverlay.style.backgroundImage = "none";
+
+        if (val === "soft-glow") {
+          lightOverlay.style.backgroundImage =
+            "radial-gradient(circle at 30% 0%, rgba(255,255,255,0.5), transparent 60%)," +
+            "radial-gradient(circle at 80% 80%, rgba(255,192,203,0.35), transparent 65%)";
+        } else if (val === "neon-flare") {
+          lightOverlay.style.backgroundImage =
+            "radial-gradient(circle at 10% 10%, rgba(0,255,255,0.45), transparent 55%)," +
+            "radial-gradient(circle at 90% 60%, rgba(255,0,255,0.45), transparent 60%)";
+        } else if (val === "retro-leak") {
+          lightOverlay.style.backgroundImage =
+            "radial-gradient(circle at 0% 40%, rgba(255,200,120,0.55), transparent 60%)," +
+            "radial-gradient(circle at 0% 80%, rgba(255,120,160,0.45), transparent 65%)";
+        } else if (val === "sunset-beam") {
+          lightOverlay.style.backgroundImage =
+            "linear-gradient(120deg, rgba(255,183,77,0.6), rgba(244,143,177,0.0) 60%)," +
+            "linear-gradient(140deg, rgba(255,235,59,0.35), transparent 55%)";
+        }
+      }
+
+      function applyFromControls() {
+        // Title + subtitle text
+        const titleVal = (titleInput.value || "").trim();
+        canvasTitle.textContent = titleVal;
+        canvasSub.textContent   = (subInput.value || "").trim();
+
+        // Font + size
+        const fontUi = fontSelect.value;
+        const fontFam= mapUiFont(fontUi);
+        canvasTitle.style.fontFamily = fontFam;
+        canvasSub.style.fontFamily   = fontFam;
+
+        const size = parseInt(sizeInput.value || "36", 10);
+        canvasTitle.style.fontSize = size + "px";
+        canvasSub.style.fontSize   = Math.max(12, size - 8) + "px";
+
+        // Font weight
+        const activeWeight = weightButtons.find(b => b.classList.contains("active"));
+        const weightVal    = activeWeight ? activeWeight.dataset.w : "600";
+        canvasTitle.style.fontWeight = weightVal;
+        canvasSub.style.fontWeight   = weightVal;
+
+        // Text color
+        const color = textColor.value || "#ffffff";
+        canvasTitle.style.color = color;
+        canvasSub.style.color   = color;
+        if (textColorCode) textColorCode.textContent = color.toUpperCase();
+
+        // Position (top / center / bottom)
+        const activePos = posButtons.find(b => b.classList.contains("active"));
+        const pos = activePos ? activePos.dataset.pos : "center";
+        if (pos === "top") {
+          canvas.style.alignItems = "flex-start";
+        } else if (pos === "bottom") {
+          canvas.style.alignItems = "flex-end";
+        } else {
+          canvas.style.alignItems = "center";
+        }
+
+        // Effects
+        let shadow = "none";
+        if (fxShadow.checked) {
+          shadow = "0 2px 8px rgba(0,0,0,0.45)";
+        }
+        if (fxGlow.checked) {
+          const glow = "0 0 16px rgba(255,255,255,0.7)";
+          shadow = shadow === "none" ? glow : shadow + ", " + glow;
+        }
+        canvasTitle.style.textShadow = shadow;
+        canvasSub.style.textShadow   = shadow;
+
+        // Filters + blur
+        applyFilter();
+        // Light overlay
+        applyLightEffect();
+      }
+
+      function getCurrentState() {
+        const activePos = posButtons.find(b => b.classList.contains("active"));
+        const activeWeight = weightButtons.find(b => b.classList.contains("active"));
+
+        return {
+          title: titleInput.value,
+          subtitle: subInput.value,
+          size: sizeInput.value,
+          font: fontSelect.value,
+          pos: activePos ? activePos.dataset.pos : "center",
+          weight: activeWeight ? activeWeight.dataset.w : "600",
+          textColor: textColor.value,
+          bgStart: bgStart.value,
+          bgEnd: bgEnd.value,
+          bgOpacity: bgOpacity.value,
+          fxShadow: fxShadow.checked,
+          fxGlow: fxGlow.checked,
+          fxBlur: fxBlur.checked,
+          filter: filterSelect.value,
+          lightEffect: lightEffectSelect.value,
+          canvasBackgroundImage: canvas.style.backgroundImage || "",
+          canvasOpacity: canvas.style.opacity || "1",
+          hasCoverImage: hasCoverImage
+        };
+      }
+
+      function applyState(state) {
+        if (!state) return;
+
+        titleInput.value = state.title;
+        subInput.value   = state.subtitle;
+        sizeInput.value  = state.size;
+        fontSelect.value = state.font;
+
+        posButtons.forEach(b => b.classList.remove("active"));
+        const posBtn = posButtons.find(b => b.dataset.pos === state.pos);
+        if (posBtn) posBtn.classList.add("active");
+
+        weightButtons.forEach(b => b.classList.remove("active"));
+        const wBtn = weightButtons.find(b => b.dataset.w === state.weight);
+        if (wBtn) wBtn.classList.add("active");
+
+        textColor.value = state.textColor;
+        bgStart.value   = state.bgStart;
+        bgEnd.value     = state.bgEnd;
+        bgOpacity.value = state.bgOpacity;
+
+        fxShadow.checked = !!state.fxShadow;
+        fxGlow.checked   = !!state.fxGlow;
+        fxBlur.checked   = !!state.fxBlur;
+        filterSelect.value = state.filter;
+
+        lightEffectSelect.value = state.lightEffect || "none";
+
+        hasCoverImage = !!state.hasCoverImage;
+
+        if (!hasCoverImage) {
+          canvas.style.backgroundImage = "";
+        }
+
+        // Keep lastBg* in sync with this restored state
+        lastBgStart = bgStart.value;
+        lastBgEnd   = bgEnd.value;
+
+        updateGradient();
+
+        if (state.canvasBackgroundImage && state.canvasBackgroundImage !== "none") {
+          canvas.style.backgroundImage = state.canvasBackgroundImage;
+          canvas.style.backgroundSize = "cover";
+          canvas.style.backgroundPosition = "center";
+          canvas.style.backgroundRepeat = "no-repeat";
+        }
+
+        canvas.style.opacity = state.canvasOpacity || "1";
+
+        applyFromControls();
+      }
+
+      function pushStateToHistory() {
+        if (isRestoringState) return;
+        historyStack.push(getCurrentState());
+      }
+
+      function loadFromSelectedCover() {
+        try {
+          let raw = null;
+
+          // Try localStorage first for the config
+          try {
+            raw = window.localStorage.getItem("selected_cover_config");
+          } catch (e) {
+            console.warn("localStorage blocked, will try sessionStorage:", e);
+          }
+
+          // Fallback: sessionStorage
+          if (!raw) {
+            try {
+              raw = window.sessionStorage.getItem("selected_cover_config");
+            } catch (e2) {
+              console.warn("sessionStorage also blocked:", e2);
+            }
+          }
+
+          let cfg = null;
+          if (raw) {
+            try {
+              cfg = JSON.parse(raw);
+            } catch (e) {
+              console.warn("Could not parse selected_cover_config JSON:", e, raw);
+            }
+          }
+
+          // --- 1) Text / font from config (if present) ---
+          if (cfg && cfg.title) {
+            titleInput.value = cfg.title;
+            canvasTitle.textContent = cfg.title;
+          }
+
+          if (cfg && cfg.font) {
+            const opts = Array.from(fontSelect.options).map(o => o.value);
+            if (opts.includes(cfg.font)) {
+              fontSelect.value = cfg.font;
+            }
+          }
+
+          // --- 2) Prefer the last selected image from Generate ---
+          let baseImage = null;
+          try {
+            baseImage = window.localStorage.getItem("ai_album_image");
+          } catch (e3) {
+            console.warn("Could not read ai_album_image:", e3);
+          }
+
+          if (baseImage) {
+            hasCoverImage = true;
+            canvas.style.backgroundImage    = "url(" + baseImage + ")";
+            canvas.style.backgroundSize     = "cover";
+            canvas.style.backgroundPosition = "center";
+            canvas.style.backgroundRepeat   = "no-repeat";
+            canvas.style.opacity            = "1";
+          } else if (cfg && cfg.backgroundImage && cfg.backgroundImage !== "none") {
+            // Fallback if for some reason ai_album_image is missing
+            hasCoverImage = true;
+            canvas.style.backgroundImage    = cfg.backgroundImage;
+            canvas.style.backgroundSize     = "cover";
+            canvas.style.backgroundPosition = "center";
+            canvas.style.backgroundRepeat   = "no-repeat";
+            canvas.style.opacity            = "1";
+          } else {
+            // No image → use gradient or color from cfg
+            hasCoverImage = false;
+            if (cfg && cfg.color) {
+              const hex = rgbToHexOrSame(cfg.color, bgStart.value);
+              bgStart.value = hex;
+              bgEnd.value   = hex;
+            }
+            // Keep lastBg* in sync with whatever we ended up using
+            lastBgStart = bgStart.value;
+            lastBgEnd   = bgEnd.value;
+
+            updateGradient();
+          }
+
+          applyFromControls();
+        } catch (e) {
+          console.error("Failed to load selected cover:", e);
+          hasCoverImage = false;
+          updateGradient();
+          applyFromControls();
+        }
+      }
+
+      // --- EVENT WIRING ---
+      titleInput.addEventListener("input", () => {
+        applyFromControls();
+        pushStateToHistory();
+      });
+
+      subInput.addEventListener("input", () => {
+        applyFromControls();
+        pushStateToHistory();
+      });
+
+      sizeInput.addEventListener("input", () => {
+        applyFromControls();
+        pushStateToHistory();
+      });
+
+      textColor.addEventListener("input", () => {
+        applyFromControls();
+        pushStateToHistory();
+      });
+
+      bgStart.addEventListener("input", handleBgColorInput("start"));
+      bgEnd.addEventListener("input", handleBgColorInput("end"));
+
+      bgOpacity.addEventListener("input", () => {
+        updateGradient();
+        applyFromControls();
+        pushStateToHistory();
+      });
+
+      fontSelect.addEventListener("change", () => {
+        applyFromControls();
+        pushStateToHistory();
+      });
+
+      posButtons.forEach(btn => {
+        btn.addEventListener("click", () => {
+          posButtons.forEach(b => b.classList.remove("active"));
+          btn.classList.add("active");
+          applyFromControls();
+          pushStateToHistory();
+        });
+      });
+
+      weightButtons.forEach(btn => {
+        btn.addEventListener("click", () => {
+          weightButtons.forEach(b => b.classList.remove("active"));
+          btn.classList.add("active");
+          applyFromControls();
+          pushStateToHistory();
+        });
+      });
+
+      fxShadow.addEventListener("change", () => {
+        applyFromControls();
+        pushStateToHistory();
+      });
+
+      fxGlow.addEventListener("change", () => {
+        applyFromControls();
+        pushStateToHistory();
+      });
+
+      fxBlur.addEventListener("change", () => {
+        applyFromControls();
+        pushStateToHistory();
+      });
+
+      filterSelect.addEventListener("change", () => {
+        applyFromControls();
+        pushStateToHistory();
+      });
+
+      lightEffectSelect.addEventListener("change", () => {
+        applyFromControls();
+        pushStateToHistory();
+      });
+
+      const templates = Array.from(document.querySelectorAll(".template-card"));
+      templates.forEach(card => {
+        card.addEventListener("click", () => {
+          const fabricUrl = card.dataset.fabric;
+
+          if (fabricUrl) {
+            // FABRIC PRESET → use texture image as background
+            hasCoverImage = true;
+            canvas.style.backgroundImage = `url("${fabricUrl}")`;
+            canvas.style.backgroundSize = "cover";
+            canvas.style.backgroundPosition = "center";
+            canvas.style.backgroundRepeat = "repeat"; 
+
+            // respect the opacity slider
+            const o = Math.max(
+              0,
+              Math.min(100, parseInt(bgOpacity.value || "100", 10))
+            ) / 100;
+            canvas.style.opacity = o.toFixed(2);
+          } else {
+            // NORMAL COLOR / GRADIENT TEMPLATE 
+            const c1 = card.dataset.c1 || "#a7c7e7";
+            const c2 = card.dataset.c2 || "#c9b8f0";
+
+            hasCoverImage = false;
+            canvas.style.backgroundImage = "";
+            bgStart.value = c1;
+            bgEnd.value   = c2;
+
+            lastBgStart = c1;
+            lastBgEnd   = c2;
+
+            updateGradient();
+          }
+
+          applyFromControls();
+          pushStateToHistory();
+        });
+      });
+
+
+      // Reset (does NOT change originalState)
+      resetBtn.addEventListener("click", () => {
+        localStorage.removeItem("selected_cover_config");
+
+        titleInput.value = "Untitled Playlist";
+        subInput.value   = "";
+        sizeInput.value  = 36;
+
+        fontSelect.value = "Modern Sans";
+
+        posButtons.forEach(b => b.classList.remove("active"));
+        const centerBtn = posButtons.find(b => b.dataset.pos === "center");
+        if (centerBtn) centerBtn.classList.add("active");
+
+        weightButtons.forEach(b => b.classList.remove("active"));
+        const midW = weightButtons.find(b => b.dataset.w === "600");
+        if (midW) midW.classList.add("active");
+
+        textColor.value = "#ffffff";
+        bgStart.value   = "#a7c7e7";
+        bgEnd.value     = "#c9b8f0";
+        bgOpacity.value = 100;
+
+        lastBgStart = bgStart.value;
+        lastBgEnd   = bgEnd.value;
+
+        fxShadow.checked = false;
+        fxGlow.checked   = false;
+        fxBlur.checked   = false;
+        filterSelect.value = "None";
+        lightEffectSelect.value = "none";
+
+        canvas.style.backgroundImage = "";
+        hasCoverImage = false;
+        updateGradient();
+        applyFromControls();
+
+        // also reset zoom + grid
+        zoomLevel = 1;
+        applyZoom();
+        if (gridOverlay) {
+          gridOverlay.style.display = "none";
+        }
+        gridOn = false;
+        if (gridBtn) gridBtn.classList.remove("grid-active");
+
+        pushStateToHistory();
+      });
+
+      // Save draft
+      saveBtn.addEventListener("click", () => {
+        const payload = {
+          title: (titleInput.value || "").trim(),
+          subtitle: (subInput.value || "").trim(),
+          font: fontSelect.value,
+          size: sizeInput.value,
+          textColor: textColor.value,
+          bgStart: bgStart.value,
+          bgEnd: bgEnd.value,
+          bgOpacity: bgOpacity.value,
+          lightEffect: lightEffectSelect.value
+        };
+        try {
+          localStorage.setItem("customize_saved_cover", JSON.stringify(payload));
+          alert("Draft saved locally 💾");
+        } catch (e) {
+          console.error("Failed to save draft:", e);
+          alert("Error saving draft");
+        }
+      });
+
+      // --- INITIAL LOAD + ORIGINAL STATE SNAPSHOT ---
+      loadFromSelectedCover();
+      originalState = getCurrentState();
+      historyStack.push(originalState);
+
+      // --- UNDO / REDO ---
+      if (undoBtn) {
+        undoBtn.addEventListener("click", () => {
+          if (historyStack.length <= 1) return;
+          historyStack.pop(); // current
+          const previous = historyStack[historyStack.length - 1];
+          isRestoringState = true;
+          applyState(previous);
+          isRestoringState = false;
+        });
+      }
+
+      if (redoBtn) {
+        redoBtn.addEventListener("click", () => {
+          if (!originalState) return;
+          isRestoringState = true;
+          applyState(originalState);  // jump back to original cover
+          isRestoringState = false;
+          historyStack.push(getCurrentState());
+        });
+      }
+
+      // ===================== OpenMoji Stickers =====================
+      const OPENMOJI_BASE = "https://openmoji.org/data/color/svg/";
+
+      const STICKERS = [
+        { id: "sparkly-heart",  label: "Sparkly Heart", hex: "1F496" },
+        { id: "pink-heart",     label: "Pink Heart",    hex: "1F497" },
+        { id: "sparkles",       label: "Sparkles",      hex: "2728"  },
+        { id: "star",           label: "Star",          hex: "2B50"  },
+        { id: "music-note",     label: "Music Note",    hex: "1F3B5" },
+        { id: "headphones",     label: "Headphones",    hex: "1F3A7" },
+        { id: "flower",         label: "Flower",        hex: "1F33C" },
+        { id: "cherry-blossom", label: "Blossom",       hex: "1F338" }
+      ];
+
+      const stickerListEl = document.getElementById("stickerList");
+      let stickerIdCounter = 0;
+
+      //  DELETE STICKER MODE
+      let deleteMode = false;
+      const deleteBtn = document.getElementById("deleteStickerBtn");
+
+      function setDeleteMode(on) {
+        deleteMode = on;
+
+        if (deleteBtn) {
+          deleteBtn.textContent = on ? "Click a sticker to delete" : "Delete Sticker";
+          deleteBtn.style.background = on ? "#ff6b81" : "";
+        }
+
+        // Outline all stickers when we are in delete mode
+        document.querySelectorAll(".sticker-instance").forEach(st => {
+          st.style.outline = on ? "2px dashed #ff6b81" : "none";
+        });
+      }
+
+      if (deleteBtn) {
+        deleteBtn.addEventListener("click", () => {
+          setDeleteMode(!deleteMode);
+        });
+      }
+
+      if (stickerListEl && canvas) {
+        STICKERS.forEach(sticker => {
+          const img = document.createElement("img");
+          img.src = OPENMOJI_BASE + sticker.hex + ".svg";
+          img.alt = sticker.label;
+          img.title = sticker.label;
+          img.className = "sticker-thumb";
+
+          img.addEventListener("click", () => {
+            addStickerToCanvas(OPENMOJI_BASE + sticker.hex + ".svg");
+          });
+
+          stickerListEl.appendChild(img);
+        });
+      }
+
+      // Attach delete behavior to a sticker element
+      function enableStickerDeletion(stickerEl) {
+        stickerEl.addEventListener("click", (e) => {
+          if (!deleteMode) return;      // only delete when in delete mode
+          e.stopPropagation();          // don't trigger drag logic
+
+          stickerEl.remove();           // remove this sticker
+
+          // Turn delete mode OFF after one delete
+          setDeleteMode(false);
+        });
+      }
+
+      function addStickerToCanvas(src) {
+        const sticker = document.createElement("img");
+        sticker.src = src;
+        sticker.className = "sticker-instance";
+        sticker.dataset.stickerId = "sticker-" + (++stickerIdCounter);
+
+        // center of the cover  
+        const rect = canvas.getBoundingClientRect();
+        const centerX = rect.width / 2;
+        const centerY = rect.height / 2;
+
+        sticker.style.left = centerX + "px";
+        sticker.style.top  = centerY + "px";
+        sticker.style.transform = "translate(-50%, -50%)";
+
+        makeStickerDraggable(sticker);
+        enableStickerDeletion(sticker);
+        canvas.appendChild(sticker);
+      }
+
+      function makeStickerDraggable(el) {
+        let isDragging = false;
+        let startX, startY, startLeft, startTop;
+
+        el.addEventListener("mousedown", (e) => {
+          e.preventDefault();
+          isDragging = true;
+          el.style.transform = ""; // remove center translate after first drag
+
+          const rect = el.getBoundingClientRect();
+          const parentRect = canvas.getBoundingClientRect();
+
+          startX = e.clientX;
+          startY = e.clientY;
+          startLeft = rect.left - parentRect.left;
+          startTop  = rect.top  - parentRect.top;
+
+          function onMouseMove(ev) {
+            if (!isDragging) return;
+            const dx = ev.clientX - startX;
+            const dy = ev.clientY - startY;
+            el.style.left = (startLeft + dx) + "px";
+            el.style.top  = (startTop  + dy) + "px";
+          }
+
+          function onMouseUp() {
+            if (!isDragging) return;
+            isDragging = false;
+            document.removeEventListener("mousemove", onMouseMove);
+            document.removeEventListener("mouseup", onMouseUp);
+          }
+
+          document.addEventListener("mousemove", onMouseMove);
+          document.addEventListener("mouseup", onMouseUp);
+        });
+      }
+    });
+  </script>
+
 </body>
 </html>
