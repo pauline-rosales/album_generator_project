@@ -300,3 +300,258 @@ select option {
   background-color: #fff !important;   /* white background */
 }
 
+/* ================= THEME TOGGLE BUTTON ================= */
+.theme-toggle {
+  margin-left: 0.5rem;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: transparent;
+  color: #e8e9ed;
+  font-size: 0.9rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.theme-toggle:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* Light theme styling for toggle */
+body.light-theme .theme-toggle {
+  color: #22263a;
+  border-color: rgba(0, 0, 0, 0.18);
+  background: rgba(0, 0, 0, 0.03);
+}
+
+body.light-theme .theme-toggle:hover {
+  background: rgba(0, 0, 0, 0.07);
+}
+
+/* ================= LIGHT THEME OVERRIDES ================= */
+body.light-theme {
+  background: #f4f5fb;
+  color: #131426;
+}
+
+/* Navbar */
+body.light-theme .navbar {
+  background: #ffffff;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow: 0 2px 10px rgba(15, 20, 40, 0.08);
+}
+
+body.light-theme .logo {
+  color: #161827;
+}
+
+body.light-theme .nav-item {
+  color: #5a6180;
+}
+
+body.light-theme .nav-item:hover {
+  background: rgba(0, 0, 0, 0.04);
+  color: #33395c;
+}
+
+body.light-theme .nav-item.active {
+  background: #33395c;
+  color: #ffffff;
+}
+
+/* Dashboard + panels */
+body.light-theme .dashboard {
+  background: linear-gradient(135deg, #f7f7ff, #edf2ff);
+}
+
+body.light-theme .left-panel,
+body.light-theme .right-panel {
+  background: #ffffff;
+  border-color: rgba(0, 0, 0, 0.06);
+}
+
+body.light-theme .center-area {
+  background: #f5f6fc;
+}
+
+body.light-theme .panel-title {
+  color: #161827;
+}
+
+/* Cards & list items */
+body.light-theme .feature-card,
+body.light-theme .playlist-info,
+body.light-theme .cover-card {
+  background: #ffffff;
+  border-color: rgba(0, 0, 0, 0.06);
+}
+
+body.light-theme .song-item {
+  border-bottom-color: rgba(0, 0, 0, 0.06);
+  color: #4b4f6a;
+}
+
+body.light-theme .song-item:hover {
+  color: #33395c;
+}
+
+/* Buttons */
+body.light-theme .regenerate-btn,
+body.light-theme .select-btn,
+body.light-theme .change-playlist-btn,
+body.light-theme .primary-btn,
+body.light-theme .download-btn,
+body.light-theme .apply-btn,
+body.light-theme .tool-btn,
+body.light-theme .action-bar-btn {
+  border-color: rgba(0, 0, 0, 0.08);
+  background: rgba(0, 0, 0, 0.02);
+  color: #131426;
+}
+
+body.light-theme .regenerate-btn:hover,
+body.light-theme .select-btn:hover,
+body.light-theme .change-playlist-btn:hover,
+body.light-theme .download-btn:hover,
+body.light-theme .tool-btn:hover,
+body.light-theme .secondary-action:hover {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+body.light-theme .apply-btn,
+body.light-theme .primary-action,
+body.light-theme .cta-primary {
+  background: #33395c;
+  color: #ffffff;
+}
+
+body.light-theme .apply-btn:hover,
+body.light-theme .primary-action:hover,
+body.light-theme .cta-primary:hover {
+  background: #252a42;
+}
+
+/* Inputs & dropdowns */
+body.light-theme .text-input,
+body.light-theme .dropdown,
+body.light-theme input,
+body.light-theme select,
+body.light-theme textarea {
+  background: #ffffff;
+  color: #131426;
+  border-color: rgba(0, 0, 0, 0.18);
+}
+
+body.light-theme .control-label {
+  color: #5a6180;
+}
+
+/* Canvas area */
+body.light-theme .canvas-area {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+body.light-theme .cover-canvas {
+  box-shadow: 0 12px 30px rgba(15, 20, 40, 0.18);
+}
+
+/* Toast in light mode */
+body.light-theme .toast {
+  background: #ffffff;
+  color: #131426;
+  border-color: rgba(0, 0, 0, 0.12);
+}
+
+/* Scrollbar tweak for light mode */
+body.light-theme ::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.02);
+}
+
+body.light-theme ::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.16);
+}
+
+/* ================= LIGHT THEME – HOMEPAGE TEXT FIXES ================= */
+
+/* Hero section */
+body.light-theme .hero h1 {
+  color: #161827;        /* deep navy-ish heading */
+}
+
+body.light-theme .hero-subtitle {
+  color: #5a6180;        /* softer muted subtitle */
+}
+
+/* Light theme – fix "See Examples" button */
+body.light-theme .cta-secondary {
+  background: rgba(0, 0, 0, 0.03);   /* light grey background */
+  color: #33395c;                    /* dark text */
+  border: 1px solid rgba(0, 0, 0, 0.10);
+}
+
+body.light-theme .cta-secondary:hover {
+  background: rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
+}
+
+/* Song title section */
+body.light-theme .playlist-title {
+  color: #161827;        /* strong dark heading */
+}
+
+body.light-theme .playlist-meta {
+  color: #5a6180;        /* muted but readable subtitle */
+}
+
+body.light-theme #playlistMood {
+  color: #6b5ad0;        /* a slightly deeper lilac so it pops on white */
+}
+
+/* Section titles ("Why Choose", "How It Works", etc.) */
+body.light-theme .section-title {
+  color: #161827;
+}
+
+/* Feature cards */
+body.light-theme .feature-title {
+  color: #161827;
+}
+
+body.light-theme .feature-description {
+  color: #5a6180;
+}
+
+body.light-theme .step-description {
+  color: #5a6180;
+}
+
+/* Connect section subtitle */
+body.light-theme .connect-section .hero-subtitle {
+  color: #5a6180;
+}
+
+/* ============= LIGHT THEME – HOW IT WORKS SECTION ============= */
+
+body.light-theme .how-it-works {
+  background: #ffffff;             /* white section in light mode */
+}
+
+body.light-theme .how-it-works .section-title {
+  color: #161827;                  /* heading: "How It Works" */
+}
+
+body.light-theme .how-it-works .step-title {
+  color: #161827;                  /* "Connect Your Playlist", etc. */
+}
+
+body.light-theme .how-it-works .step-description {
+  color: #5a6180;                  /* body text under each step */
+}
+
+body.light-theme .how-it-works .step-number {
+  background: #f1ecff;             /* softer bubble */
+  border-color: #d0c4ff;
+  color: #33395c;
+}

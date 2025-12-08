@@ -64,3 +64,50 @@ downloadBtn?.addEventListener('click', () => {
   console.log('Download button clicked');
   // Add your download/export logic here (html2canvas, etc.) if you decide
 });
+
+// ===================================================================
+// =============== LIGHT / DARK THEME TOGGLE ==========================
+// ===================================================================
+(function () {
+  const THEME_KEY = 'cg-theme';
+  const btn = document.getElementById('themeToggle');
+
+  function applyTheme(theme) {
+    const isLight = theme === 'light';
+    document.body.classList.toggle('light-theme', isLight);
+
+    // Only touch the button text if it exists on this page
+    if (btn) {
+      btn.textContent = isLight ? '☀️' : '🌙';
+    }
+  }
+
+  // Load saved theme (default dark)
+  let initial = 'dark';
+  try {
+    const saved = localStorage.getItem(THEME_KEY);
+    if (saved === 'light' || saved === 'dark') {
+      initial = saved;
+    }
+  } catch (e) {
+    console.warn('Could not read theme from localStorage:', e);
+  }
+
+  // Always apply the theme, even if there's no toggle button on this page
+  applyTheme(initial);
+
+  // Only wire up click handler if the button actually exists
+  if (btn) {
+    btn.addEventListener('click', () => {
+      const isLight = document.body.classList.contains('light-theme');
+      const next = isLight ? 'dark' : 'light';
+
+      applyTheme(next);
+      try {
+        localStorage.setItem(THEME_KEY, next);
+      } catch (e) {
+        console.warn('Could not save theme to localStorage:', e);
+      }
+    });
+  }
+})();
