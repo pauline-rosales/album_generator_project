@@ -1,86 +1,100 @@
-    Read Me
+ README.md
+ 
+⭐ Final Functional Prototype – Album Generator
 
-    Home Page: 
-    Introduces the app and explains how it works
-    Buttons to “Get Started” or “Connect Spotify/Apple Music” (mocked navigation)
+🎯 Main Features 
+Playlist Preview & Selection: 
+Users can view a playlist and see song titles and metadata.
 
-    Generate Page (Dashboard): 
-    Shows a playlist preview (mock data)
-    Displays three AI-style cover options
-    Allows selecting a cover, changing text, font style, and colors
-    Apply & Download buttons (front-end only, no real AI yet)
+AI-Style Cover Generation: 
+Three cover concepts are displayed on the Generate page, letting the user select one and begin customizing.
 
-    Customize Page:  
-    Used for advanced cover editing after a design is chosen. Users can fine-tune the title and subtitle, adjust font family, weight, and text position, change gradient background colors and opacity, toggle visual effects (shadow, glow, blur), reset to defaults, save a design snapshot, and download the refined cover image.
+Advanced Cover Customization & Download: 
+Users can edit titles, fonts, gradients, borders, effects, and export the final cover as a PNG.
+
+Home Page:
+Introduces the app and explains how it works
+Buttons for Get Started or Connect Spotify/Apple Music 
+
+Generate Page (Dashboard):
+Shows a playlist preview 
+Displays three AI-style cover options
+Allows selecting a cover
+Lets users modify title, font style, and colors
+Apply & Download buttons 
+
+Customize Page:
+Advanced editing after a design is selected:
+Change title & subtitle
+Adjust font family, weight, spacing
+Choose fabric art
+Move text position
+Change Opacity
+Drag and drop stickers
+Delete Stickers
+Change filters
+Change gradient colors & opacity
+Enable/disable effects (shadow, glow, blur)
+Reset to defaults
+Save a design snapshot
+Download the refined cover image
 
 
-    Help Page: 
-    Simple help/FAQ section (placeholder)
-
-    🗂️ Project Structure
-    album_generator_project/
-    ├── Frontend/
-    │ ├── index.html (Home)
-    │ ├── generate.html (Dashboard)
-    │ ├── customize.html
-    │ ├── help.html
-    │ ├── server.js (Express server)
-    │ └── assets/
-    │ ├── styles.css
-    │ └── app.js
-    ├── package.json
-    └── README.md
-
-    🧠 Technologies Used
-    Frontend: HTML5, CSS3, JavaScript
-    Backend: Node.js + Express.js
-    Runtime: Localhost server
-    Design: Responsive layout with flex/grid, dark UI theme
+❓ Help Page
+Simple FAQ + instructions 
 
 
-    ⚙️ How to Run the Project
+🧠 Technologies Used
+Frontend: HTML5, CSS3, JavaScript
+Backend: Node.js + Express.js
+Runtime: Localhost server
+Design: Flex/Grid responsive layout + dark UI theme + light UI theme
 
-    Install dependencies: 
+⚙️ How to Run the Project
 
-    npm install
+Install dependencies:
 
-    Start the server:
-    
-    npm start
+npm install
 
-    Open in browser: 
+Start the server:
 
-    Home → http://localhost:8080/
-    Generate → http://localhost:8080/generate
-    Customize → http://localhost:8080/customize
-    Help → http://localhost:8080/help
+npm start
 
-    Everything is served through Express and works as separate pages.
+Open in browser:
+Home → http://localhost:8080/
+Generate → http://localhost:8080/generate
+Customize → http://localhost:8080/customize
+Help → http://localhost:8080/help
 
-    📦 package.json Summary
+All pages are served with Express.
 
-    Uses Express 5
-    “start” script runs Frontend/server.js
+📦 package.json Summary
+Uses Express v5
+"start" script runs Frontend/server.js
 
-    🧩 How the Express Server Works
+🧩 How the Express Server Works
+Serves static HTML pages from the Frontend folder
+Routes /generate, /customize, /help → matching HTML files
+Serves CSS/JS from /assets
+Falls back to index.html if a path does not match
 
-    The server:
-    Serves all static HTML pages in your Frontend folder
-    Maps routes (/generate, /customize, /help) to the matching HTML files
-    Serves your assets (CSS, JS) from the assets folder
-    Falls back to index.html when a path is not found
+🎨 Design Notes
+Dark purple/blue modern theme
+Light theme if chosen
+Soft gradients + pastel accents
+Responsive layout
 
-    🎨 Design Notes
+Reusable components across pages
 
-    Dark purple/blue theme
-    Modern gradients and pastel accents
-    Responsive layout for small screens
-    Reusable UI components for both home page and dashboard
+🔐 Environment Variables (Required for Full Functionality)
+This app uses external APIs (Cloudflare AI, Spotify), so a .env file is required locally.
 
-    🧩 Future Enhancements
+Create a .env file in the project root with the following structure:
 
-    Spotify real OAuth login (PKCE)
-    Image generation backend
-    Downloading custom covers as PNG
-    Saving user preferences
-    Full customization tools
+CF_API_KEY=your_cloudflare_key_here
+SPOTIFY_CLIENT_ID=your_spotify_client_id_here
+SPOTIFY_CLIENT_SECRET=your_spotify_client_secret_here
+
+IMPORTANT Note:
+For security reasons, real API keys are not included in this repository.
+Without valid keys, the UI loads fully, but AI cover generation and live Spotify playlist features will not function.
