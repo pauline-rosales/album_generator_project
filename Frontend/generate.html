@@ -162,7 +162,7 @@
 
       let spotifyPlaylists = [];
 
-      // --- Spotify button state + logout handler (single, clean version) ---
+      // --- Spotify button state + logout handler ---
       async function handleSpotifyLogout(e) {
         e.preventDefault();
 
@@ -186,7 +186,7 @@
         if (plMetaEl)  plMetaEl.textContent  = "";
         if (moodEl)    moodEl.textContent    = "";
 
-        // Optionally forget cached images
+        // forget cached images
         try {
           localStorage.removeItem("ai_album_last_images");
         } catch (e) {

@@ -20,7 +20,7 @@ const SPOTIFY_CLIENT_SECRET = process.env.SPOTIFY_CLIENT_SECRET;
 const SPOTIFY_REDIRECT_URI  = process.env.SPOTIFY_REDIRECT_URI;
 const SPOTIFY_SCOPES        = process.env.SPOTIFY_SCOPES;
 
-// Simple in-memory store for dev (single user)
+// Simple in-memory store 
 let spotifyState = {
   accessToken: null,
   refreshToken: null,
@@ -225,7 +225,7 @@ const parsed = safeParseJson(raw, fallbackParsed);
         `No text, no letters, no numbers, no symbols, no logos, no captions.`;
     }
 
-    // 🔹 NEW: split the playlist into first half / second half
+    // split the playlist into first half / second half
     let firstHalf = [];
     let secondHalf = [];
 
@@ -242,7 +242,7 @@ const parsed = safeParseJson(raw, fallbackParsed);
     const firstHalfLines = firstHalf.map(s => `- ${s}`).join('\n');
     const secondHalfLines = secondHalf.map(s => `- ${s}`).join('\n');
 
-    // 2) Build three distinct prompts for the image model
+    // Build three distinct prompts for the image model
     const prompts = [
       // Image 1 – title / overall vibe
       `
@@ -311,9 +311,9 @@ app.get('/api/spotify/login', (req, res) => {
   const params = new URLSearchParams({
     client_id: SPOTIFY_CLIENT_ID,
     response_type: 'code',
-    redirect_uri: SPOTIFY_REDIRECT_URI,  // MUST match your .env and Spotify Dashboard
+    redirect_uri: SPOTIFY_REDIRECT_URI,  
     scope: SPOTIFY_SCOPES || '',
-    show_dialog: 'true'   // 🔹 force Spotify to show login/consent every time
+    show_dialog: 'true'   // force Spotify to show login/consent every time
   });
 
   const authUrl = `https://accounts.spotify.com/authorize?${params.toString()}`;
@@ -400,7 +400,7 @@ app.get('/callback', async (req, res) => {
         );
     }
 
-    // 3) Get tracks from the first playlist (like you already did)
+    // 3) Get tracks from the first playlist 
     let firstPlaylistTracks = [];
     if (playlistsData.items && playlistsData.items.length > 0) {
       const first = playlistsData.items[0];
@@ -436,7 +436,7 @@ app.get('/callback', async (req, res) => {
       firstPlaylistTracks
     };
 
-    // 5) Redirect back to your Generate page
+    // 5) Redirect back to Generate page
     res.redirect('/generate');
   } catch (err) {
     console.error('Spotify callback error:', err);
@@ -531,7 +531,7 @@ app.get('/api/spotify/playlist/:id/tracks', async (req, res) => {
 // LOG OUT OF SPOTIFY (app-level logout)
 app.get("/api/spotify/logout", (req, res) => {
   try {
-    // 🔹 Clear the in-memory state that your app actually uses
+    //  Clear the in-memory state 
     spotifyState = {
       accessToken: null,
       refreshToken: null,

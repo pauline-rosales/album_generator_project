@@ -231,15 +231,13 @@ body{
   opacity: 0.5; /* stronger overall */
 }
 
-
-/* Optional: pressed state for the Grid button */
+/*  pressed state for the Grid button */
 .tool-btn.grid-active {
   background: rgba(255,255,255,0.12);
   border-color: rgba(201,184,240,0.4);
 }
 
 /* --- Sticker picker --- */
-
 .sticker-list {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -270,7 +268,7 @@ body{
 /* Stickers placed on the cover */
 .sticker-instance {
   position: absolute;
-  width: 72px;         /* tweak if you want smaller/bigger stickers */
+  width: 72px;         
   height: 72px;
   pointer-events: auto;
   user-select: none;
@@ -473,7 +471,7 @@ body.light-theme ::-webkit-scrollbar-thumb {
   background: rgba(0, 0, 0, 0.16);
 }
 
-/* ================= LIGHT THEME – HOMEPAGE TEXT FIXES ================= */
+/* ================= LIGHT THEME  ================= */
 
 /* Hero section */
 body.light-theme .hero h1 {

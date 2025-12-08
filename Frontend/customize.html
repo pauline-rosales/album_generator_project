@@ -8,7 +8,7 @@
   <!-- Shared styles for the site -->
   <link rel="stylesheet" href="/assets/styles.css"/>
 
-  <!-- Page-specific styles (kept for now so it matches what you already had) -->
+  <!-- Page-specific styles  -->
   <style>
     * {
       margin: 0;
@@ -78,7 +78,7 @@
       grid-template-columns: 300px 1fr 340px;
       height: calc(100vh - 70px);
       gap: 0;
-      margin-top: 70px; /* so content starts under the fixed navbar */
+      margin-top: 70px; 
     }
 
     /* Left Panel */
@@ -1086,8 +1086,6 @@ if (custShareBtn) {
         // fall through to downloadFallback
       }
     }
-
-    // If file sharing isn't supported or anything failed → just download quietly
     downloadFallback();
   });
 }
@@ -1118,7 +1116,7 @@ if (custShareBtn) {
       function rgbToHexOrSame(colorStr, fallback) {
         if (!colorStr) return fallback;
         const m = colorStr.match(/^rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)$/i);
-        if (!m) return colorStr; // maybe already hex
+        if (!m) return colorStr; 
         const r = Number(m[1]).toString(16).padStart(2, "0");
         const g = Number(m[2]).toString(16).padStart(2, "0");
         const b = Number(m[3]).toString(16).padStart(2, "0");
@@ -1545,7 +1543,7 @@ if (custShareBtn) {
             canvas.style.backgroundImage = `url("${fabricUrl}")`;
             canvas.style.backgroundSize = "cover";
             canvas.style.backgroundPosition = "center";
-            canvas.style.backgroundRepeat = "repeat"; // change to "no-repeat" if you prefer
+            canvas.style.backgroundRepeat = "repeat"; 
 
             // respect the opacity slider
             const o = Math.max(
@@ -1554,7 +1552,7 @@ if (custShareBtn) {
             ) / 100;
             canvas.style.opacity = o.toFixed(2);
           } else {
-            // NORMAL COLOR / GRADIENT TEMPLATE (what you already had)
+            // NORMAL COLOR / GRADIENT TEMPLATE 
             const c1 = card.dataset.c1 || "#a7c7e7";
             const c2 = card.dataset.c2 || "#c9b8f0";
 
@@ -1690,7 +1688,7 @@ if (custShareBtn) {
       const stickerListEl = document.getElementById("stickerList");
       let stickerIdCounter = 0;
 
-      // 🔴 DELETE STICKER MODE
+      //  DELETE STICKER MODE
       let deleteMode = false;
       const deleteBtn = document.getElementById("deleteStickerBtn");
 

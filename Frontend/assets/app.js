@@ -7,7 +7,7 @@
   });
 })();
 
-// 🔹 Defensive cleanup: delete legacy key from older versions
+//  Defensive cleanup: delete legacy key from older versions
 try {
   localStorage.removeItem('cgSelectedCoverUrl');
 } catch (e) {
@@ -49,20 +49,13 @@ if (currentPath === '/generate') {
     }
   });
 
-  // ⚠️ IMPORTANT:
-  // No more:
-  // - click listeners on .cover-card
-  // - saving cgSelectedCoverUrl
-  // - Apply button navigation
-  // Those are all handled by the inline <script> in generate.html now
 }
 
 // ===================================================================
-// =============== (Optional) Download button hook ====================
+// =============== Download button hook ====================
 // ===================================================================
 downloadBtn?.addEventListener('click', () => {
   console.log('Download button clicked');
-  // Add your download/export logic here (html2canvas, etc.) if you decide
 });
 
 // ===================================================================
